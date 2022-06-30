@@ -1,0 +1,453 @@
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>CRCs</title>
+
+  <style>
+    h1 {
+      font-size: 24px;
+    }
+    h2 {
+      padding-top: 20px;
+      font-size: 20px;
+    }
+
+
+    .bad {
+      border-color: red;
+      outline-color: red;
+    }
+
+    .code {
+      font-style: normal;
+      font-family: monospace;
+      padding: 4px;
+      background: #ddf;
+      border-radius: 4px;
+    }
+
+    .note {
+      font-style: italic;
+      font-size: 90%;
+    }
+
+    input {
+      text-align: right;
+      width: 10em;
+    }
+
+    td {
+      padding-top: 5px;
+      padding-bottom: 5px;
+      padding-left: 3px;
+      padding-right: 3px;
+    }
+
+    #table_common_polynomials tr {
+      cursor: pointer;
+    }
+    #table_common_polynomials td:nth-child(3) {
+      text-align: center;
+    }
+    #table_common_polynomials td {
+      padding: 10px;
+    }
+  </style>
+</head>
+<body>
+<h1>Cyclic redundancy checks</h1>
+
+<p><b>TODO</b> also learn about other common checksums, like Adler32 and fnv1-a</p>
+<p><b>TODO</b> write some notes about the properties of CRCs</p>
+<p><b>TODO</b> shift-register representation of CRCs?</p>
+<p><b>TODO</b> using special instructions to compute CRCs</p>
+<p><b>TODO</b> table-driven approach?</p>
+<p><b>TODO</b> final XOR step in some variants?</p>
+<p><b>TODO</b> do some variants start with ones instead of zeros?</p>
+<p><b>TODO</b> bit- and byte-order in commonly used implementations?</p>
+<p><b>TODO</b> watch <a href="https://betterembsw.blogspot.com/2013/11/crc-webinar.html">https://betterembsw.blogspot.com/2013/11/crc-webinar.html</a></p>
+<p><b>TODO</b> read <a href="http://www.ross.net/crc/download/crc_v3.txt">http://www.ross.net/crc/download/crc_v3.txt</a></p>
+
+<div>
+  <h2>Polynomial</h2>
+  <table>
+    <tr>
+      <td>Normal</td>
+      <td><input id="field_normal_hex" type="text"></td>
+      <td><input id="field_normal_bin" type="text" value="11"></td>
+      <td><span class="note">MSB-first. The MSB (i.e. the leftmost) is omitted and implicitly 1.</span></td>
+    </tr>
+    <tr>
+      <td>Reverse</td>
+      <td><input id="field_reverse_hex" type="text"></td>
+      <td><input id="field_reverse_bin" type="text"></td>
+      <td><span class="note">LSB-first. The MSB (i.e. the rightmost bit) is omitted and implicitly 1.</span></td>
+    </tr>
+    <tr>
+      <td>Reversed reciprocal</td>
+      <td><input id="field_reciprocal_hex" type="text"></td>
+      <td><input id="field_reciprocal_bin" type="text"></td>
+      <td><span class="note">MSB-first. The LSB (i.e. the rightmost bit) is omitted and implicitly 1.</span></td>
+    </tr>
+    <tr>
+      <td>Width</td>
+      <td><input id="field_width" type="number" value=3></td>
+    </tr>
+    <tr>
+      <td>Polynomial</td>
+      <td colspan=3><span id="span_polynomial" class="code"></span></td>
+    </tr>
+  </table>
+
+  <p>This degree <span id="span_polynomial_degree" class="code"></span> polynomial will generate a <span id="span_crc_width" class="code"></span> bit CRC.</p>
+
+  <p>
+    The MSB of the polynomial must be 1, otherwise the computation doesn't work.<br>
+    Trailing (LSB) zeros in the polynomial lead to an equal number of trailing unused bits in the CRC.
+  </p>
+
+  <p>The polynomial form is usefull since it is consistent, even if different formats for converting the polynomial to a number.</p>
+</div>
+
+<div>
+  <h2>Common polynomials</h2>
+
+  <p class="note">Click an entry to show it in the view above!</p>
+
+  <table id="table_common_polynomials">
+    <tr><td>Parity</td><td>1 bit</td><td><span class="code">0x1</span></td></tr>
+    <tr><td>CRC-15-CAN</td><td>15 bits</td><td><span class="code">0x4599</span></td><td class="note">CAN-Bus</td></tr>
+    <tr><td>CRC-16-IBM</td><td>16 bits</td><td><span class="code">0x8005</span></td><td class="note">Modbus, etc.</td></tr>
+    <tr><td>CRC-17-CAN</td><td>17 bits</td><td><span class="code">0x1685b</span></td><td class="note">CAN FD, for messages &le; 16 bytes</td></tr>
+    <tr><td>CRC-17-CAN</td><td>21 bits</td><td><span class="code">0x102899</span></td><td class="note">CAN FD, for messages &gt; 16 bytes</td></tr>
+    <tr><td>CRC-32</td><td>32 bits</td><td><span class="code">0x04c11db7</span></td><td class="note">Ethernet, etc.</td></tr>
+  </table>
+
+  <p>
+    <a href="http://users.ece.cmu.edu/~koopman/crc/index.html">Philip Koopman's page</a> provides tables of the "best" polynomials.
+    His page also has links to other good references.
+  </p>
+</div>
+
+<div>
+  <h2>Division method</h2>
+
+  <table>
+    <tr>
+      <td>Data bits</td>
+      <td><input id="division_field" type="text" value="11010011101100"></td>
+    </tr>
+  </table>
+
+  <pre id="division_output">
+  </pre>
+</div>
+
+<script>
+  const CHAR_SPACE = " ".charCodeAt(0);
+  const CHAR_ZERO = "0".charCodeAt(0);
+  const CHAR_ONE = "1".charCodeAt(0);
+  const CHAR_LOWERCASE_A = "a".charCodeAt(0);
+  const CHAR_UPPERCASE_A = "A".charCodeAt(0);
+
+  function parse_bin(string) {
+    string = string.trim();
+    let bits = [];
+    for (let i = 0; i < string.length; ++i) {
+      let c = string.charCodeAt(i);
+      if (c == CHAR_SPACE) {
+        // Ok
+      } else if (c == CHAR_ZERO) {
+        bits.push(0);
+      } else if (c == CHAR_ONE) {
+        bits.push(1);
+      } else {
+        bits = null;
+        break;
+      }
+    }
+    if (bits && bits.length == 0) {
+      bits = null;
+    }
+    return bits;
+  }
+
+  function bits_to_bin_string(bits) {
+    let string = "";
+    for (let i = bits.length - 1; i >= 0; --i) {
+      let bit = bits[bits.length - i - 1];
+      string += bit? "1" : "0";
+    }
+    return string;
+  }
+
+  function parse_hex(string) {
+    string = string.trim();
+
+    if (string.slice(0, 2) == "0x") {
+      string = string.slice(2);
+    }
+
+    let bits = [];
+    for (let i = 0; i < string.length; ++i) {
+      let c = string.charCodeAt(i);
+      let digit = null;
+      if (c == CHAR_SPACE) {
+        // Ok
+      } else if (CHAR_ZERO <= c && c <= CHAR_ZERO + 9) {
+        digit = c - CHAR_ZERO;
+      } else if (CHAR_LOWERCASE_A <= c && c <= CHAR_LOWERCASE_A + 5) {
+        digit = c - CHAR_LOWERCASE_A + 10;
+      } else if (CHAR_UPPERCASE_A <= c && c <= CHAR_UPPERCASE_A + 5) {
+        digit = c - CHAR_UPPERCASE_A + 10;
+      } else {
+        bits = null;
+        break;
+      }
+
+      bits.push((digit >> 3) & 1);
+      bits.push((digit >> 2) & 1);
+      bits.push((digit >> 1) & 1);
+      bits.push((digit >> 0) & 1);
+    }
+
+    if (bits && bits.length == 0) {
+      bits = null;
+    }
+    return bits;
+  }
+
+  const HEX_CHARACTERS = "0123456789abcdef";
+  function bits_to_hex_string(bits) {
+    let hex_string = "";
+    for (let i = 0; i < bits.length; i += 4) {
+      let digit = 0;
+      for (let j = 0; j < 4 && i + j < bits.length; ++j) {
+        let bit = bits[bits.length - (j + i) - 1];
+        digit |= bit << j;
+      }
+      hex_string = HEX_CHARACTERS[digit] + hex_string;
+    }
+    if (hex_string.length == 0) {
+      hex_string = 0;
+    }
+    return "0x" + hex_string;
+  }
+
+
+
+  let field_normal_bin = document.getElementById("field_normal_bin");
+  let field_normal_hex = document.getElementById("field_normal_hex");
+  let field_reverse_bin = document.getElementById("field_reverse_bin");
+  let field_reverse_hex = document.getElementById("field_reverse_hex");
+  let field_reciprocal_bin = document.getElementById("field_reciprocal_bin");
+  let field_reciprocal_hex = document.getElementById("field_reciprocal_hex");
+  let field_width = document.getElementById("field_width");
+  let span_polynomial = document.getElementById("span_polynomial");
+  let span_polynomial_degree = document.getElementById("span_polynomial_degree");
+  let span_crc_width = document.getElementById("span_crc_width");
+
+  let division_field = document.getElementById("division_field");
+  let division_output = document.getElementById("division_output");
+
+
+  let g_polynomial = null;
+
+  function polynomial_update(field) {
+    field_normal_bin.classList.remove("bad");
+    field_normal_hex.classList.remove("bad");
+    field_reverse_bin.classList.remove("bad");
+    field_reverse_hex.classList.remove("bad");
+    field_reciprocal_bin.classList.remove("bad");
+    field_reciprocal_hex.classList.remove("bad");
+    field_width.classList.remove("bad");
+
+    // Normal variants, prepend MSB 1
+    if (field == field_normal_bin) {
+      g_polynomial = parse_bin(field_normal_bin.value);
+      if (!g_polynomial) field.classList.add("bad");
+    }
+    if (field == field_normal_hex || field == field_width) {
+      g_polynomial = parse_hex(field_normal_hex.value);
+      if (!g_polynomial) field.classList.add("bad");
+    }
+    if (g_polynomial && (field == field_normal_hex || field == field_normal_bin || field == field_width)) {
+      while (g_polynomial && g_polynomial.length > 1 && g_polynomial[0] == 0) {
+        g_polynomial = g_polynomial.slice(1);
+      }
+
+      let width = parseInt(field_width.value);
+      if (g_polynomial.length <= width) {
+        let target_length = width + 1;
+        let prefix = Array(target_length - g_polynomial.length).fill(0);
+        prefix[0] = 1;
+        g_polynomial = prefix.concat(g_polynomial);
+      } else {
+        g_polynomial = null;
+        field_normal_bin.classList.add("bad");
+        field_normal_hex.classList.add("bad");
+        field_width.classList.add("bad");
+      }
+    }
+
+    // Reverse variants
+    if (field == field_reverse_bin) {
+      g_polynomial = parse_bin(field_reverse_bin.value);
+      if (!g_polynomial) field_reverse_bin.classList.add("bad");
+    }
+    if (field == field_reverse_hex) {
+      g_polynomial = parse_hex(field_reverse_hex.value);
+      if (!g_polynomial) field_reverse_hex.classList.add("bad");
+    }
+    if (g_polynomial && (field == field_reverse_bin || field == field_reverse_hex)) {
+      field_width.value = g_polynomial.length;
+      g_polynomial = g_polynomial.concat([1]);
+      g_polynomial.reverse();
+    }
+
+    // Reciprocal variants
+    if (field == field_reciprocal_bin) {
+      g_polynomial = parse_bin(field_reciprocal_bin.value);
+      if (!g_polynomial) field_reciprocal_bin.classList.add("bad");
+    }
+    if (field == field_reciprocal_hex) {
+      g_polynomial = parse_hex(field_reciprocal_hex.value);
+      if (!g_polynomial) field_reciprocal_hex.classList.add("bad");
+    }
+    if (g_polynomial && (field == field_reciprocal_bin || field == field_reciprocal_hex)) {
+      while (g_polynomial.length > 1 && g_polynomial[0] == 0) {
+        g_polynomial = g_polynomial.slice(1);
+      }
+      field_width.value = g_polynomial.length;
+      g_polynomial = g_polynomial.concat([1]);
+    }
+
+    // Update other fields
+    if (g_polynomial) {
+      if (field != field_normal_bin) {
+        field_normal_bin.value = bits_to_bin_string(g_polynomial.slice(1));
+      }
+      if (field != field_normal_hex) {
+        field_normal_hex.value = bits_to_hex_string(g_polynomial.slice(1));
+      }
+      if (field != field_reverse_bin) {
+        field_reverse_bin.value = bits_to_bin_string(Array.from(g_polynomial.slice(1)).reverse());
+      }
+      if (field != field_reverse_hex) {
+        field_reverse_hex.value = bits_to_hex_string(Array.from(g_polynomial.slice(1)).reverse());
+      }
+      if (field != field_reciprocal_bin) {
+        field_reciprocal_bin.value = bits_to_bin_string(g_polynomial.slice(0, g_polynomial.length - 1));
+      }
+      if (field != field_reciprocal_hex) {
+        field_reciprocal_hex.value = bits_to_hex_string(g_polynomial.slice(0, g_polynomial.length - 1));
+      }
+
+      let poly_string = "";
+      for (let i = 0; i < g_polynomial.length; ++i) {
+        if (g_polynomial[i]) {
+          if (poly_string.length > 0) {
+            poly_string += " + ";
+          }
+          if (i + 2 == g_polynomial.length) {
+            poly_string += "x";
+          } else if (i + 1 == g_polynomial.length) {
+            poly_string += "1";
+          } else {
+            poly_string += "x<sup>" + (g_polynomial.length - i - 1) + "</sup>";
+          }
+        }
+      }
+
+      span_polynomial.innerHTML = poly_string;
+      span_polynomial_degree.innerText = g_polynomial.length;
+      span_crc_width.innerText = g_polynomial.length - 1;
+    }
+
+    division_field_update();
+  }
+
+  function division_field_update() {
+    division_field.classList.remove("bad");
+
+    let data_bits = parse_bin(division_field.value);
+    if (!data_bits) {
+      division_field.classList.add("bad");
+    } else if (!g_polynomial) {
+      // Sadge
+    } else {
+      let data_len = data_bits.length;
+      let crc_len = g_polynomial.length - 1;
+      data_bits = data_bits.concat(Array(crc_len).fill(0));
+
+      let string = "";
+
+      while (string.length < 10000) {
+        let polynomial_offset = 0;
+        while (polynomial_offset < data_len && data_bits[polynomial_offset] == 0) {
+          ++polynomial_offset;
+        }
+
+        if (string.length == 0) string += "  ";
+        else                    string += "= ";
+
+        let data_string = bits_to_bin_string(data_bits);
+        string += data_string.slice(0, data_len) + " " + data_string.slice(data_len);
+        string += "\n";
+
+        if (polynomial_offset >= data_len) {
+          break;
+        }
+
+        string += "^ ";
+
+        let polynomial_string = "";
+        for (let i = 0; i < polynomial_offset; ++i) polynomial_string += " ";
+        polynomial_string += bits_to_bin_string(g_polynomial, false);
+        string += polynomial_string.slice(0, data_len) + " " + polynomial_string.slice(data_len);
+        string += "\n";
+
+        for (let i = 0; i < g_polynomial.length; ++i) {
+          data_bits[polynomial_offset + i] ^= g_polynomial[i];
+        }
+      }
+
+      string += "\n";
+      let crc = data_bits.slice(data_len);
+      string += "CRC is " + bits_to_bin_string(crc) + " or " + bits_to_hex_string(crc);
+
+      division_output.innerText = string;
+    }
+  }
+
+
+  field_normal_bin.oninput = function() { polynomial_update(field_normal_bin); };
+  field_normal_hex.oninput = function() { polynomial_update(field_normal_hex); };
+  field_reverse_bin.oninput = function() { polynomial_update(field_reverse_bin); };
+  field_reverse_hex.oninput = function() { polynomial_update(field_reverse_hex); };
+  field_reciprocal_bin.oninput = function() { polynomial_update(field_reciprocal_bin); };
+  field_reciprocal_hex.oninput = function() { polynomial_update(field_reciprocal_hex); };
+  field_width.oninput = function() { polynomial_update(field_width); };
+  field_normal_bin.oninput();
+
+  division_field.oninput = division_field_update;
+
+
+  function common_polynomial_click() {
+    let bits = parseInt(this.children[1].innerText.split(" ")[0]);
+    let hex = this.children[2].children[0].innerText;
+    field_width.value = bits;
+    field_normal_hex.value = hex;
+    polynomial_update(field_normal_hex);
+  }
+
+  let common_polynomials = document.getElementById("table_common_polynomials").children[0].children;
+  for (let i = 0; i < common_polynomials.length; ++i) {
+    let row = common_polynomials[i];
+    row.onclick = common_polynomial_click;
+  }
+
+</script>
+
+</body>
+</html>

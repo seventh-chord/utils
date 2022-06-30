@@ -1,0 +1,480 @@
+<!-- This file is completely stand-alone. You can just download the html if you want a local copy -->
+<!-- We can't support edge, ie or safari, because they lack BigInt -->
+
+<!--
+    TODO Show the value of each mantissa bit (as "2^a")
+    TODO Refer to IEEE754 for rounding in the decimal input field
+    TODO Show a rounded output in the decimal input field when it's not preserved
+-->
+
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>IEEE 754</title>
+
+    <style>
+        .sign     { background: #ffffc0; }
+        .exponent { background: #ffc0ff; }
+        .mantissa { background: #c0ffff; }
+
+        #main_div {
+            width: 800px;
+        }
+
+        #main_div > * {
+            margin-top: 10px;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        td {
+            padding: 3px;
+        }
+
+        #labels td {
+            text-align: center;
+            margin-left: 10px;
+            margin-right: 10px;
+        }
+        #bits td {
+            text-align: center;
+        }
+        #bits button {
+            width: 1.2em;
+            padding: 0;
+            text-align: center;
+            font-family: monospace;
+            outline: 1px solid #aaaaaa;
+            background: #cccccc;
+            margin: 1px;
+        }
+        #bits button.set {
+            background: #ffffff;
+        }
+        #mantissa_bits_prefix {
+            font-family: monospace;
+        }
+        input {
+            width: 100%;
+            font-family: monospace;
+            text-align: center;
+        }
+        input:invalid {
+            box-shadow: 0 0 2px red;
+            border-color: red;
+            outline 0 none;
+        }
+        #sign_show {
+            width: 100%;
+            font-family: monospace;
+            text-align: center;
+        }
+
+        #output {
+            width: 90%;
+        }
+        #output td:first-child {
+            text-align: right;
+            padding-right: 5px;
+            width: 20%;
+        }
+        #value_expression {
+            text-align: center;
+            font-family: monospace;
+        }
+
+        #interesting_values {
+            text-align: center;
+        }
+        #interesting_values ul,
+        #interesting_values li {
+            display: inline-block;
+            margin-top: 0;
+        }
+    </style>
+</head>
+<body>
+
+<div id="main_div">
+    <h1>IEEE 754 - 32 Bit</h1>
+
+    <table>
+        <tr id="labels">
+            <td class=sign></td>
+            <td class= exponent>Exponent</td>
+            <td class=mantissa>Mantissa</td>
+        </tr>
+        <tr id="bits">
+            <td class=sign><button></button></td>
+            <td class=exponent>
+                <button></button> <button></button> <button></button> <button></button>
+                <button></button> <button></button> <button></button> <button></button>
+            </td>
+            <td class=mantissa>
+                <span id="mantissa_bits_prefix"></span>
+                <button></button> <button></button> <button></button> <button></button>
+                <button></button> <button></button> <button></button> <button></button>
+                <button></button> <button></button> <button></button> <button></button>
+                <button></button> <button></button> <button></button> <button></button>
+                <button></button> <button></button> <button></button> <button></button>
+                <button></button> <button></button> <button></button>
+            </td>
+        </tr>
+        <tr>
+            <td class=sign><div id="sign_show"></div></td>
+            <td class=exponent><input id="exponent" type="number" min=-127 max=128 step=1 required></td>
+            <td class=mantissa><input id="mantissa" type="number" min=0 max=8388607 step=1 required></td>
+        </tr>
+    </table>
+
+    <table id="output">
+        <tr><td>Expression:</td><td id="value_expression"></td></tr>
+        <tr><td>Exact value:</td><td><input id="value_exact" readonly></td></tr>
+        <tr><td>Hex value:</td><td><input id="value_hex" pattern="0x[a-fA-F0-9]{1,8}"></td></tr>
+    </table>
+
+    <div>
+        <input id="decimal_input" placeholder="Enter decimal number here..."></input>
+    </div>
+
+    <div id="interesting_values">
+    Values of interest: 
+    <ul>
+        <li><button data-sign=0 data-exponent=128 data-mantissa=0>+Inf</button></li>
+        <li><button data-sign=1 data-exponent=128 data-mantissa=0>-Inf</button></li>
+        <li><button data-sign=0 data-exponent=128 data-mantissa=1>NaN</button></li>
+        <li><button data-sign=0 data-exponent=-127 data-mantissa=0>+0.0</button></li>
+        <li><button data-sign=0 data-exponent=0 data-mantissa=0>+1.0</button></li>
+        <li><button data-sign=0 data-exponent=-127 data-mantissa=1>Min. denormal</button></li>
+        <li><button data-sign=0 data-exponent=-126 data-mantissa=0>Min. normal</button></li>
+    </ul>
+    </div>
+</div>
+
+<script>
+    const BIAS = 127;
+    const EXPONENT_SPECIAL = 128;
+
+    bits = document.getElementById("bits").getElementsByTagName("BUTTON");
+    mantissa_input = document.getElementById("mantissa");
+    exponent_input = document.getElementById("exponent");
+    sign_span = document.getElementById("sign_show");
+    expression_span = document.getElementById("value_expression");
+    value_input = document.getElementById("value_exact");
+    hex_input = document.getElementById("value_hex");
+    decimal_input = document.getElementById("decimal_input");
+    interesting_value_buttons = document.getElementById("interesting_values").getElementsByTagName("BUTTON");
+    mantissa_bits_prefix = document.getElementById("mantissa_bits_prefix");
+
+    function get_bits(first, count)
+    {
+        let result = 0;
+        for (let i = first; i < first + count; i += 1) {
+            let bit = bits[i].innerText == "0"? 0 : 1;
+            result = (result << 1) | bit;
+        }
+        return result;
+    }
+
+    function set_bits(first, count, value)
+    {
+        for (let i = first + count - 1; i >= first; i -= 1) {
+            let bit = value & 1;
+            value >>= 1;
+            bits[i].innerText = bit? "1" : "0";
+
+            bits[i].classList.remove("set");
+            if (bit) {
+                bits[i].classList.add("set");
+            }
+        }
+    }
+
+    function fraction_to_string(fraction, allow_exponent)
+    {
+        let exponent_shift = 0;
+
+        if (allow_exponent) {
+            while (fraction.numerator != 0 && fraction.numerator < fraction.denominator) {
+                fraction.numerator *= 10n;
+                exponent_shift -= 1;
+            }
+
+            while (fraction.numerator >= fraction.denominator*10n) {
+                fraction.denominator *= 10n;
+                exponent_shift += 1;
+            }
+        }
+
+        let whole_part = fraction.numerator / fraction.denominator;
+        fraction.numerator = fraction.numerator % fraction.denominator;
+        let result = whole_part.toString() + ".";
+
+        let decimal_digits = 0;
+        while (fraction.numerator > 0 && result.length < 1000) {
+            fraction.numerator *= 10n;
+            if (fraction.numerator >= fraction.denominator) {
+                let digit = fraction.numerator / fraction.denominator;
+                result += digit.toString();
+            } else {
+                result += "0";
+            }
+            fraction.numerator = fraction.numerator % fraction.denominator;
+            decimal_digits += 1;
+        }
+        if (decimal_digits == 0) result += "0";
+
+        if (exponent_shift != 0) {
+            result += "e" + exponent_shift.toString();
+        }
+
+        return result;
+    }
+
+    function parse_decimal_string(s)
+    {
+        let numerator = 0n;
+        let denominator = 1n;
+        let exponent = 0n;
+        let seen_decimal_point = false;
+        let seen_exponent = false;
+        let exponent_negative = false;
+        let any_digits = false;
+        let whole_number_negative = false;
+
+        for (let i = 0; i < s.length; i += 1) {
+            let c = s.codePointAt(i);
+            if (i == 0 && c == 45) {
+                whole_number_negative = true;
+            } else if (c >= 48 && c <= 57) {
+                let digit = BigInt(c - 48);
+                any_digits = true;
+                if (seen_exponent) {
+                    exponent = exponent*10n + digit;
+                } else {
+                    numerator = numerator*10n + digit;
+                    if (seen_decimal_point) denominator = denominator*10n;
+                }
+            } else if (any_digits && !seen_decimal_point && !seen_exponent && c == 46) {
+                seen_decimal_point = true;
+            } else if (any_digits && !seen_exponent && (c == 101 || c == 69)) {
+                seen_exponent = true;
+                if (i + 1 < s.length && s.codePointAt(i + 1) == 45) {
+                    exponent_negative = true;
+                    i += 1;
+                }
+            } else {
+                return null;
+            }
+        }
+
+        if (exponent_negative) {
+            denominator = denominator * 10n**exponent;
+        } else {
+            numerator = numerator * 10n**exponent;
+        }
+        
+        return { numerator: numerator, denominator: denominator, negative: whole_number_negative };
+    }
+
+    function fraction_to_float(fraction)
+    {
+        let sign = fraction.negative? 1 : 0;
+        let exponent = 0;
+        let mantissa = 0;
+
+        if (fraction.numerator != 0) {
+            if (fraction.numerator < fraction.denominator) {
+                while (fraction.numerator < fraction.denominator && exponent > -BIAS) {
+                    exponent -= 1;
+                    fraction.numerator = fraction.numerator*2n;
+                }
+            } else if (fraction.numerator >= fraction.denominator*2n) {
+                while (fraction.numerator >= fraction.denominator*2n && exponent < EXPONENT_SPECIAL) {
+                    exponent += 1;
+                    fraction.denominator = fraction.denominator*2n;
+                }
+            }
+
+            if (exponent == EXPONENT_SPECIAL) {
+                // Infinity
+                mantissa = 0;
+            } else {
+                let mantissa_big;
+                // TODO This doesn't respect IEEE754 rounding rules
+                if (exponent <= -BIAS) {
+                    mantissa_big = ((1n << 23n) * fraction.numerator) / fraction.denominator;
+                } else {
+                    mantissa_big = ((1n << 23n) * (fraction.numerator - fraction.denominator)) / fraction.denominator;
+                }
+
+                mantissa = Number(mantissa_big);
+                if (mantissa < 0) mantissa = 0;
+                if (mantissa >= (1 << 23)) mantissa = 1 << 23;
+            }
+        }
+
+        return { sign: sign, exponent: exponent + BIAS, mantissa: mantissa };
+    }
+    
+    function show(sign, exponent, mantissa, preserve)
+    {
+        if (sign == null) {
+            sign = get_bits(0, 1);
+        }
+        if (exponent == null) {
+            exponent = get_bits(1, 8);
+        }
+        if (mantissa == null) {
+            mantissa = get_bits(9, 23);
+        }
+
+        sign = parseInt(sign);
+        exponent = parseInt(exponent);
+        mantissa = parseInt(mantissa);
+
+        set_bits(0, 1, sign);
+        set_bits(1, 8, exponent);
+        set_bits(9, 23, mantissa);
+
+        sign_span.innerText = sign? "-" : "+";
+
+        let biased_exponent;
+        let denormal = exponent == 0;
+        if (denormal) {
+            biased_exponent = -BIAS + 1;
+        } else {
+            biased_exponent = exponent - BIAS;
+        }
+
+
+        if (preserve != "mantissa") {
+            mantissa_input.value = mantissa;
+        }
+
+        if (preserve != "exponent") {
+            exponent_input.value = exponent - BIAS;
+        }
+
+
+        let sign_string = sign? "-" : "+";
+
+        let expression_string, full_string;
+
+        if (biased_exponent == EXPONENT_SPECIAL) {
+            if (mantissa == 0) {
+                expression_string = sign_string + "Inf";
+                full_string = sign_string + "Inf";
+            } else {
+                expression_string = "NaN";
+                full_string = "NaN";
+            }
+
+        } else {
+            let mantissa_fraction = { numerator: BigInt(mantissa), denominator: 1n << 23n };
+            if (!denormal) mantissa_fraction.numerator += mantissa_fraction.denominator;
+            let mantissa_string = fraction_to_string(mantissa_fraction, false);
+            expression_string = sign_string + "2<sup>" + biased_exponent + "</sup> · " + mantissa_string;
+
+            let full_fraction = { numerator: BigInt(mantissa), denominator: 1n << 23n };
+            if (!denormal) full_fraction.numerator += full_fraction.denominator;
+
+            if (biased_exponent <= 23) {
+                full_fraction.denominator = 1n << BigInt(23 - biased_exponent);
+            } else {
+                let remaining_exponent = biased_exponent - 23;
+                full_fraction.denominator = 1n;
+                full_fraction.numerator = full_fraction.numerator << BigInt(remaining_exponent);
+            }
+            full_string = sign_string + fraction_to_string(full_fraction, true);
+        }
+
+
+        expression_span.innerHTML = expression_string;
+        value_input.value = full_string;
+
+        if (preserve != "hex") {
+            let integer_representation = (BigInt(sign) << 31n) | (BigInt(exponent) << 23n) | BigInt(mantissa);
+            let hex_string = integer_representation.toString(16);
+            hex_string = "0x" + ("00000000" + hex_string).substring(hex_string.length)
+            hex_input.value = hex_string;
+        }
+
+        if (preserve != "decimal_input") {
+            // TODO Maybe actually format the float in a sensible way and put it here
+            decimal_input.value = "";
+        }
+
+        mantissa_bits_prefix.innerText = denormal? "0." : "1.";
+    }
+
+    function on_bit_change()
+    {
+        this.innerText = this.innerText == "0"? "1" : "0";
+        show(null, null, null, null);
+    }
+
+    function on_mantissa_change()
+    {
+        let new_mantissa = null;
+        if (mantissa_input.validity.valid) {
+            new_mantissa = mantissa_input.value;
+        }
+        show(null, null, new_mantissa, "mantissa");
+    }
+
+    function on_exponent_change()
+    {
+        let new_exponent = null;
+        if (exponent_input.validity.valid) {
+            new_exponent = parseInt(exponent_input.value);
+        }
+        show(null, new_exponent + BIAS, null, "exponent");
+    }
+
+    function on_decimal_change()
+    {
+        let fraction = parse_decimal_string(decimal_input.value);
+        decimal_input.setCustomValidity((fraction === null)? "Not a valid decimal string"  : "");
+        if (fraction) {
+            let my_float = fraction_to_float(fraction);
+            show(my_float.sign, my_float.exponent, my_float.mantissa, "decimal_input");
+        }
+    }
+
+    function on_hex_change()
+    {
+        if (hex_input.validity.valid) {
+            let integer_value = parseInt(hex_input.value);
+            let sign = (integer_value >>> 31) & 1;
+            let exponent = (integer_value >>> 23) & 0xff;
+            let mantissa = integer_value & ((1 << 23) - 1);
+            show(sign, exponent, mantissa, "hex");
+        }
+    }
+
+    function on_interesting_value_click()
+    {
+        let unbiased_exponent = parseInt(this.dataset.exponent) + BIAS;
+        show(this.dataset.sign, unbiased_exponent, this.dataset.mantissa, null);
+    }
+
+    mantissa_input.addEventListener("input", on_mantissa_change);
+    exponent_input.addEventListener("input", on_exponent_change);
+    decimal_input.addEventListener("input", on_decimal_change);
+    hex_input.addEventListener("input", on_hex_change);
+    decimal_input.value = "";
+    for (let i = 0; i < bits.length; i += 1) {
+        bits[i].addEventListener("click", on_bit_change)
+    }
+    show(0, 0, 0, null);
+
+    for (let i = 0; i < interesting_value_buttons.length; i += 1) {
+        interesting_value_buttons[i].addEventListener("click", on_interesting_value_click);
+    } 
+</script>
+
+</body>
+</html>

@@ -1,0 +1,307 @@
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Guitar chords</title>
+
+  <style>
+    #fretboard, #chord-picker {
+      display: inline-block;
+      vertical-align: top;
+    }
+    
+    #fretboard {
+      user-select: none;
+    }
+
+    #fretboard table {
+      margin: 20px;
+      border-collapse: collapse;
+
+      font-family: "Consolas", monospace;
+      font-size: 14px;
+    }
+    #fretboard td {
+      border: 1px solid;
+    }
+    #fretboard tr:first-child td {
+      border-top: 3px solid;
+    }
+    #fretboard tr:first-child td:last-child,
+    #fretboard tr:first-child td:first-child {
+      border-top: none; /* The selector rules in CSS seem really wierd to me, why wouldn't it just be top to bottom? */
+    }
+    #fretboard td:last-child,
+    #fretboard td:first-child,
+    #fretboard tr:last-child td {
+      border: none;
+    }
+
+    #fretboard td {
+      padding: 0;
+      width: 24px;
+      height: 38px;
+      vertical-align: top;
+      text-align: left;
+    }
+
+    #fretboard span {
+      display: block;
+      text-align: center;
+      width: 18px;
+      height: 18px;
+      line-height: 18px;
+      border-radius: 100px; /* Apparently the play is just to set this as large as possible :P */
+
+      position: relative;
+      left: -9px;
+      top: -9px;
+    }
+
+    #fretboard .finger {
+      background: black;
+      color: white;
+    }
+    #fretboard .base {
+      text-decoration: underline;
+    }
+
+    #fretboard .cross {
+      font-weight: bold;
+      top: -20px;
+    }
+    #fretboard td:last-child .cross {
+      top: -19px; /* No clue why this is needed... */
+    }
+
+    #fretboard .fret-number {
+      font-size: 120%;
+      left: -5px;
+    }
+
+
+
+    #chord-picker {
+      user-select: none;
+    }
+
+
+    #scale-picker-slot {
+      font-family: "Consolas", monospace;
+      font-size: 14px;
+
+      margin: 20px;
+      margin-bottom: 30px;
+      position: relative;
+    }
+    #scale-picker > span {
+      position: absolute;
+    }
+    #scale-picker > span > span {
+      width: 100%;
+      position: absolute;
+      bottom: 3px;
+      text-align: center;
+    }
+
+    #scale-picker .white {
+      border: 1px solid #000;
+    }
+    #scale-picker .black {
+      background: #000;
+      color: #fff;
+      z-index: 1;
+    }
+    #scale-picker .selected.white {
+      background: #ddf;
+      color: #440;
+    }
+    #scale-picker .selected.black {
+      background: #115;
+      color: #ffb;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Guitar chords</h1>
+
+  <div id="fretboard">
+    <!-- Content is generated using javascript -->
+  </div>
+
+  <div id="chord-picker">
+    <div id="scale-picker-slot"></div>
+  </div>
+  
+  <script>
+    const FRETS = 15;
+    const NOTES_IN_SCALE = 12;
+
+    // C is 0
+    const STRING_OFFSETS = [
+      4, // E
+      9, // A
+      2, // D
+      7, // G
+      11, // B
+      4, // e
+    ];
+
+    function get_finger_positions_for_notes(notes) {
+      let finger_positions = [];
+
+      
+
+      for (let string = 1; string <= STRING_OFFSETS.length; ++string) {
+        for (let fret = 0; fret <= FRETS; ++fret) {
+          for (let i = 0; i < notes.length; ++i) {
+            if ((STRING_OFFSETS[string - 1] + fret) % NOTES_IN_SCALE == notes[i].offset) {
+              finger_positions.push({ fret: fret, string: string, label: notes[i].label });
+              break;
+            }
+          }
+        }
+      }
+
+      return finger_positions;
+    }
+
+    function show_finger_positions(finger_positions) {
+      let fretboard = "<table>";
+      for (let fret = 0; fret <= FRETS; ++fret) {
+        fretboard += "<tr>"; 
+        
+        let fret_number = "";
+        if (fret == 5 || fret == 7 || fret == 9 || fret == 12 || fret == 15 || fret == 17) {
+          let bullet = fret == 12? "&bull;&bull;" : "&bull;";
+          fret_number = "<span class='fret-number'>" + bullet + "</span>";
+        }
+        fretboard += "<td>" + fret_number + "</td>";
+
+        for (let string = 1; string <= STRING_OFFSETS.length; ++string) {
+          let span = "";
+
+          let mark = null;
+          for (let i = 0; i < finger_positions.length; ++i) {
+            if (finger_positions[i].string == string && finger_positions[i].fret == fret) {
+              mark = finger_positions[i].label;
+              break;
+            }
+          }
+          if (mark) {
+            span = "<span class='finger'>" + mark + "</span></td>";
+          }
+
+          if (fret == 0) {
+            let any_mark = false;
+            for (let i = 0; i < finger_positions.length; ++i) {
+              if (finger_positions[i].string == string) {
+                any_mark = true;
+                break;
+              }
+            }
+
+            if (!any_mark) {
+              span = "<span class='cross'>X</span></td>";;
+            }
+          }
+
+          fretboard += "<td>" + span + "</td>";
+        }
+        fretboard += "</tr>";
+      }
+      fretboard += "</table>";
+      document.getElementById("fretboard").innerHTML = fretboard;
+    }
+
+
+    let KEYS = [];
+    KEYS[0]  = { placement: 0, names: [ "C" ] };
+    KEYS[2]  = { placement: 1, names: [ "D" ] };
+    KEYS[4]  = { placement: 2, names: [ "E" ] };
+    KEYS[5]  = { placement: 3, names: [ "F" ] };
+    KEYS[7]  = { placement: 4, names: [ "G" ] },
+    KEYS[9]  = { placement: 5, names: [ "A" ] },
+    KEYS[11] = { placement: 6, names: [ "B" ] },
+    KEYS[1]  = { placement: 1, names: [ "C#", "Db" ] };
+    KEYS[3]  = { placement: 2, names: [ "D#", "Eb" ] };
+    KEYS[6]  = { placement: 4, names: [ "F#", "Gb" ] };
+    KEYS[8]  = { placement: 5, names: [ "G#", "Ab" ] };
+    KEYS[10] = { placement: 6, names: [ "A#", "Bb" ] };
+
+
+    /*
+    let am7 = [
+      { string: 2, fret: 0, label: "A", base: true },
+      { string: 3, fret: 2, label: "E" },
+      { string: 4, fret: 2, label: "A" },
+      { string: 5, fret: 1, label: "C" },
+      { string: 6, fret: 3, label: "G" },
+    ];
+    show_finger_positions(am7);
+    */
+
+    function scale_on_pick(offset) {
+      console.log(offset);
+      let key_spans = document.getElementById("scale-picker").children;
+      console.log(key_spans);
+      for (let i = 0; i < KEYS.length; ++i) {
+        key_spans[i].classList.remove("selected");
+      }
+      key_spans[offset].classList.add("selected");
+
+
+      let key = KEYS[offset];
+
+      let notes = [
+        { offset: (offset + 0)%NOTES_IN_SCALE, label: "1" },
+        { offset: (offset + 4)%NOTES_IN_SCALE, label: "3" },
+        { offset: (offset + 7)%NOTES_IN_SCALE, label: "5" },
+      ];
+      let finger_positions = get_finger_positions_for_notes(notes);
+      show_finger_positions(finger_positions);
+    }
+
+    function create_scale_picker() {
+      const WHITE_WIDTH = 52;
+      const WHITE_HEIGHT = 120;
+      const BLACK_WIDTH = 40;
+      const BLACK_HEIGHT = 85;
+
+      scale_picker = `<div id='scale-picker' style='width: ${WHITE_WIDTH*7 + 1}; height: ${WHITE_HEIGHT + 1};'>`;
+      for (let i = 0; i < KEYS.length; ++i) {
+        let key = KEYS[i];
+        let white = key.names.length == 1;
+
+        let key_class, key_name;
+        let x, width, height;
+        if (white) {
+          key_class = "white";
+          key_name = key.names[0];
+          width = WHITE_WIDTH - 1;
+          height = WHITE_HEIGHT;
+          x = WHITE_WIDTH*key.placement;
+        } else {
+          key_class = "black";
+          key_name = key.names[0] + "<br>" + key.names[1];
+          width = BLACK_WIDTH;
+          height = BLACK_HEIGHT;
+          x = WHITE_WIDTH*key.placement - BLACK_WIDTH/2;
+        }
+
+        scale_picker +=
+          `<span class='${key_class}' onclick='scale_on_pick(${i})' ` +
+          `style='width: ${width}px; height: ${height}px; left: ${x}px;' ` +
+          `><span>${key_name}</span></span>`;
+      }
+      scale_picker += "</div>";
+
+      document.getElementById("scale-picker-slot").innerHTML = scale_picker;
+    }
+
+    
+    create_scale_picker();
+    scale_on_pick(0);
+  </script>
+</body>
+</html>
