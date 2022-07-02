@@ -18,7 +18,7 @@
       border-collapse: collapse;
 
       font-family: "Consolas", monospace;
-      font-size: 14px;
+      font-size: 12px;
     }
     #fretboard td {
       border: 1px solid;
@@ -38,8 +38,8 @@
 
     #fretboard td {
       padding: 0;
-      width: 24px;
-      height: 38px;
+      width: 26px;
+      height: 42px;
       vertical-align: top;
       text-align: left;
     }
@@ -47,14 +47,14 @@
     #fretboard span {
       display: block;
       text-align: center;
-      width: 18px;
-      height: 18px;
-      line-height: 18px;
+      width: 20px;
+      height: 20px;
+      line-height: 20px;
       border-radius: 100px; /* Apparently the play is just to set this as large as possible :P */
 
       position: relative;
-      left: -9px;
-      top: -9px;
+      left: -10px;
+      top: -10px;
     }
 
     #fretboard .finger {
@@ -84,40 +84,22 @@
       user-select: none;
     }
 
-
-    #scale-picker-slot {
-      font-family: "Consolas", monospace;
-      font-size: 14px;
-
-      margin: 20px;
-      margin-bottom: 30px;
-      position: relative;
-    }
-    #scale-picker > span {
-      position: absolute;
-    }
-    #scale-picker > span > span {
-      width: 100%;
-      position: absolute;
-      bottom: 3px;
+    #chord-picker table {
       text-align: center;
+      border-collapse: collapse;
     }
 
-    #scale-picker .white {
-      border: 1px solid #000;
+    #chord-picker td {
+      border: 1px solid black;
+      padding: 10px;
     }
-    #scale-picker .black {
-      background: #000;
-      color: #fff;
-      z-index: 1;
+
+    #chord-picker td:first-child {
+      font-style: italic;
     }
-    #scale-picker .selected.white {
+
+    #chord-picker td.selected {
       background: #ddf;
-      color: #440;
-    }
-    #scale-picker .selected.black {
-      background: #115;
-      color: #ffb;
     }
   </style>
 </head>
@@ -130,12 +112,31 @@
   </div>
 
   <div id="chord-picker">
-    <div id="scale-picker-slot"></div>
   </div>
   
   <script>
     const FRETS = 15;
-    const NOTES_IN_SCALE = 12;
+    const SEMITONES_IN_OCTAVE = 12;
+
+    let NOTES = [
+      { name: "C", offset: 0 },
+      { name: "C#", offset: 1 },
+      { name: "Db", offset: 1 },
+      { name: "D", offset: 2 },
+      { name: "D#", offset: 3 },
+      { name: "Eb", offset: 3 },
+      { name: "E", offset: 4 },
+      { name: "F", offset: 5 },
+      { name: "F#", offset: 6 },
+      { name: "Gb", offset: 6 },
+      { name: "G", offset: 7 },
+      { name: "G#", offset: 8 },
+      { name: "Ab", offset: 8 },
+      { name: "A", offset: 9 },
+      { name: "A#", offset: 10 },
+      { name: "Bb", offset: 10 },
+      { name: "B", offset: 11 },
+    ];
 
     // C is 0
     const STRING_OFFSETS = [
@@ -147,24 +148,48 @@
       4, // e
     ];
 
-    function get_finger_positions_for_notes(notes) {
-      let finger_positions = [];
 
-      
+    // Intervals
+    const P1  = { semitones: 0,  short: "P1",  name: "Unison" };
+    const m2  = { semitones: 1,  short: "m2",  name: "Minor second" };
+    const M2  = { semitones: 2,  short: "M2",  name: "Major second" };
+    const m3  = { semitones: 3,  short: "m3",  name: "Minor third" };
+    const M3  = { semitones: 4,  short: "M3",  name: "Major third" };
+    const P4  = { semitones: 5,  short: "P4",  name: "Perfect fourth" };
+    const A4  = { semitones: 6,  short: "A4",  name: "Augmented fourth" };
+    const d5  = { semitones: 6,  short: "d5",  name: "Diminished fifth" };
+    const P5  = { semitones: 7,  short: "P5",  name: "Perfect fifth" };
+    const A5  = { semitones: 8,  short: "A5",  name: "Augmented fifth" };
+    const m6  = { semitones: 8,  short: "m6",  name: "Minor sixth" };
+    const M6  = { semitones: 9,  short: "M6",  name: "Major sixth" };
+    const m7  = { semitones: 10, short: "m7",  name: "Minor seventh" };
+    const M7  = { semitones: 11, short: "M7",  name: "Major seventh" };
+    const P8  = { semitones: 12, short: "P8",  name: "Octave" };
+    const m9  = { semitones: 13, short: "m9",  name: "Minor ninth" };
+    const M9  = { semitones: 14, short: "M9",  name: "Major ninth" };
+    const m10 = { semitones: 15, short: "m10", name: "Minor tenth" };
+    const M10 = { semitones: 16, short: "M10", name: "Major tenth" };
+    const P11 = { semitones: 17, short: "P11", name: "Perfect eleventh" };
+    const A11 = { semitones: 18, short: "A11", name: "Augmented eleventh" };
+    const d12 = { semitones: 18, short: "d12", name: "Diminished twelfth" };
+    const P12 = { semitones: 19, short: "P12", name: "Perfect twelfth" };
+    const m13 = { semitones: 20, short: "m13", name: "Minor thirteenth" };
+    const M13 = { semitones: 21, short: "M13", name: "Major thirteenth" };
 
-      for (let string = 1; string <= STRING_OFFSETS.length; ++string) {
-        for (let fret = 0; fret <= FRETS; ++fret) {
-          for (let i = 0; i < notes.length; ++i) {
-            if ((STRING_OFFSETS[string - 1] + fret) % NOTES_IN_SCALE == notes[i].offset) {
-              finger_positions.push({ fret: fret, string: string, label: notes[i].label });
-              break;
-            }
-          }
-        }
-      }
 
-      return finger_positions;
-    }
+    const CHORDS = [
+        { name: "Major triad", suffix: [ "" ], intervals: [ P1, M3, P5 ] },
+        { name: "Minor triad", suffix: [ "m" ], intervals: [ P1, m3, P5 ] },
+        { name: "Augmented", suffix: [ "aug", "+" ], intervals: [ P1, M3, A5 ] },
+        { name: "Diminished", suffix: [ "dim", "°" ], intervals: [ P1, m3, d5 ] },
+        { name: "Suspended (2)", suffix: [ "sus2" ], intervals: [ P1, M2, P5 ] },
+        { name: "Suspended (4)", suffix: [ "sus4" ], intervals: [ P1, P4, P5 ] },
+        // 6x seventh
+        // m6? wth???
+        // 9th, 11th, 13th
+    ];
+
+
 
     function show_finger_positions(finger_positions) {
       let fretboard = "<table>";
@@ -214,94 +239,70 @@
       document.getElementById("fretboard").innerHTML = fretboard;
     }
 
+    function chord_picker_onclick(note_index, chord_index) {
+      let note = NOTES[note_index];
+      let chord = CHORDS[chord_index];
 
-    let KEYS = [];
-    KEYS[0]  = { placement: 0, names: [ "C" ] };
-    KEYS[2]  = { placement: 1, names: [ "D" ] };
-    KEYS[4]  = { placement: 2, names: [ "E" ] };
-    KEYS[5]  = { placement: 3, names: [ "F" ] };
-    KEYS[7]  = { placement: 4, names: [ "G" ] },
-    KEYS[9]  = { placement: 5, names: [ "A" ] },
-    KEYS[11] = { placement: 6, names: [ "B" ] },
-    KEYS[1]  = { placement: 1, names: [ "C#", "Db" ] };
-    KEYS[3]  = { placement: 2, names: [ "D#", "Eb" ] };
-    KEYS[6]  = { placement: 4, names: [ "F#", "Gb" ] };
-    KEYS[8]  = { placement: 5, names: [ "G#", "Ab" ] };
-    KEYS[10] = { placement: 6, names: [ "A#", "Bb" ] };
-
-
-    /*
-    let am7 = [
-      { string: 2, fret: 0, label: "A", base: true },
-      { string: 3, fret: 2, label: "E" },
-      { string: 4, fret: 2, label: "A" },
-      { string: 5, fret: 1, label: "C" },
-      { string: 6, fret: 3, label: "G" },
-    ];
-    show_finger_positions(am7);
-    */
-
-    function scale_on_pick(offset) {
-      console.log(offset);
-      let key_spans = document.getElementById("scale-picker").children;
-      console.log(key_spans);
-      for (let i = 0; i < KEYS.length; ++i) {
-        key_spans[i].classList.remove("selected");
+      let table_content = document.getElementById("chord-picker").children[0].children[0].children;
+      for (let i = 0; i < table_content.length; ++i) {
+        let row = table_content[i].children;
+        for (let j = 1; j < row.length; ++j) {
+          row[j].classList.remove("selected");
+        }
       }
-      key_spans[offset].classList.add("selected");
+      table_content[chord_index].children[1 + note_index].classList.add("selected");
 
 
-      let key = KEYS[offset];
+      let finger_positions = [];
 
-      let notes = [
-        { offset: (offset + 0)%NOTES_IN_SCALE, label: "1" },
-        { offset: (offset + 4)%NOTES_IN_SCALE, label: "3" },
-        { offset: (offset + 7)%NOTES_IN_SCALE, label: "5" },
-      ];
-      let finger_positions = get_finger_positions_for_notes(notes);
+      for (let string = 1; string <= STRING_OFFSETS.length; ++string) {
+        for (let fret = 0; fret <= FRETS; ++fret) {
+          for (let i = 0; i < chord.intervals.length; ++i) {
+            let neck_semitone = (STRING_OFFSETS[string - 1] + fret) % SEMITONES_IN_OCTAVE;
+            let chord_semitone = (note.offset + chord.intervals[i].semitones) % SEMITONES_IN_OCTAVE;
+
+            if (neck_semitone == chord_semitone) {
+              finger_positions.push({ fret: fret, string: string, label: chord.intervals[i].short });
+              break;
+            }
+          }
+        }
+      }
+
       show_finger_positions(finger_positions);
     }
 
-    function create_scale_picker() {
-      const WHITE_WIDTH = 52;
-      const WHITE_HEIGHT = 120;
-      const BLACK_WIDTH = 40;
-      const BLACK_HEIGHT = 85;
+    function create_chord_picker() {
+      let chord_picker = "<table>";
 
-      scale_picker = `<div id='scale-picker' style='width: ${WHITE_WIDTH*7 + 1}; height: ${WHITE_HEIGHT + 1};'>`;
-      for (let i = 0; i < KEYS.length; ++i) {
-        let key = KEYS[i];
-        let white = key.names.length == 1;
+      for (let chord_index = 0; chord_index < CHORDS.length; ++chord_index) {
+        let chord = CHORDS[chord_index];
 
-        let key_class, key_name;
-        let x, width, height;
-        if (white) {
-          key_class = "white";
-          key_name = key.names[0];
-          width = WHITE_WIDTH - 1;
-          height = WHITE_HEIGHT;
-          x = WHITE_WIDTH*key.placement;
-        } else {
-          key_class = "black";
-          key_name = key.names[0] + "<br>" + key.names[1];
-          width = BLACK_WIDTH;
-          height = BLACK_HEIGHT;
-          x = WHITE_WIDTH*key.placement - BLACK_WIDTH/2;
+        chord_picker += "<tr>";
+        chord_picker += `<td>${chord.name}</td>`;
+
+        for (let note_index = 0; note_index < NOTES.length; ++note_index) {
+          let note = NOTES[note_index];
+
+          let names_string = "";
+          for (let i = 0; i < chord.suffix.length; ++i) {
+            if (i > 0) names_string += "<br>";
+            names_string += note.name + chord.suffix[i];
+          }
+
+          chord_picker += `<td onclick="chord_picker_onclick(${note_index}, ${chord_index})">${names_string}</td>`;
         }
 
-        scale_picker +=
-          `<span class='${key_class}' onclick='scale_on_pick(${i})' ` +
-          `style='width: ${width}px; height: ${height}px; left: ${x}px;' ` +
-          `><span>${key_name}</span></span>`;
+        chord_picker += "</tr>";
       }
-      scale_picker += "</div>";
+      chord_picker += "</table>";
 
-      document.getElementById("scale-picker-slot").innerHTML = scale_picker;
+      document.getElementById("chord-picker").innerHTML = chord_picker;
     }
 
     
-    create_scale_picker();
-    scale_on_pick(0);
+    create_chord_picker();
+    chord_picker_onclick(Math.floor(Math.random() * NOTES.length), Math.floor(Math.random() * CHORDS.length));
   </script>
 </body>
 </html>
