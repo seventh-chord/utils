@@ -54,7 +54,7 @@
 
       position: relative;
       left: -10px;
-      top: -10px;
+      top: -31px;
     }
 
     #fretboard .finger {
@@ -76,6 +76,7 @@
     #fretboard .fret-number {
       font-size: 120%;
       left: -5px;
+      top: -10px;
     }
 
 
@@ -94,12 +95,22 @@
       padding: 10px;
     }
 
+    #chord-picker tr:first-child,
     #chord-picker td:first-child {
       font-style: italic;
+      font-weight: bold;
+    }
+
+    #chord-picker td.selectable {
+      width: 75px;
+    }
+
+    #chord-picker td.selectable:not(.selected):hover {
+      background: #ddf;
     }
 
     #chord-picker td.selected {
-      background: #ddf;
+      background: #bbf;
     }
   </style>
 </head>
@@ -119,23 +130,18 @@
     const SEMITONES_IN_OCTAVE = 12;
 
     let NOTES = [
-      { name: "C", offset: 0 },
-      { name: "C#", offset: 1 },
-      { name: "Db", offset: 1 },
-      { name: "D", offset: 2 },
-      { name: "D#", offset: 3 },
-      { name: "Eb", offset: 3 },
-      { name: "E", offset: 4 },
-      { name: "F", offset: 5 },
-      { name: "F#", offset: 6 },
-      { name: "Gb", offset: 6 },
-      { name: "G", offset: 7 },
-      { name: "G#", offset: 8 },
-      { name: "Ab", offset: 8 },
-      { name: "A", offset: 9 },
-      { name: "A#", offset: 10 },
-      { name: "Bb", offset: 10 },
-      { name: "B", offset: 11 },
+      { names: [ "C" ], offset: 0 },
+      { names: [ "C#", "Db" ], offset: 1 },
+      { names: [ "D" ], offset: 2 },
+      { names: [ "D#", "Eb" ], offset: 3 },
+      { names: [ "E" ], offset: 4 },
+      { names: [ "F" ], offset: 5 },
+      { names: [ "F#", "Gb" ], offset: 6 },
+      { names: [ "G" ], offset: 7 },
+      { names: [ "G#", "Ab" ], offset: 8 },
+      { names: [ "A" ], offset: 9 },
+      { names: [ "A#", "Bb" ], offset: 10 },
+      { names: [ "B" ], offset: 11 },
     ];
 
     // C is 0
@@ -162,6 +168,7 @@
     const A5  = { semitones: 8,  short: "A5",  name: "Augmented fifth" };
     const m6  = { semitones: 8,  short: "m6",  name: "Minor sixth" };
     const M6  = { semitones: 9,  short: "M6",  name: "Major sixth" };
+    const d7  = { semitones: 9,  short: "d7",  name: "Diminished seventh" };
     const m7  = { semitones: 10, short: "m7",  name: "Minor seventh" };
     const M7  = { semitones: 11, short: "M7",  name: "Major seventh" };
     const P8  = { semitones: 12, short: "P8",  name: "Octave" };
@@ -178,14 +185,34 @@
 
 
     const CHORDS = [
-        { name: "Major triad", suffix: [ "" ], intervals: [ P1, M3, P5 ] },
-        { name: "Minor triad", suffix: [ "m" ], intervals: [ P1, m3, P5 ] },
-        { name: "Augmented", suffix: [ "aug", "+" ], intervals: [ P1, M3, A5 ] },
-        { name: "Diminished", suffix: [ "dim", "°" ], intervals: [ P1, m3, d5 ] },
-        { name: "Suspended (2)", suffix: [ "sus2" ], intervals: [ P1, M2, P5 ] },
-        { name: "Suspended (4)", suffix: [ "sus4" ], intervals: [ P1, P4, P5 ] },
-        // 6x seventh
-        // m6? wth???
+        { name: "Major triad", suffix: "", intervals: [ P1, M3, P5 ] },
+        { name: "Minor triad", suffix: "m", intervals: [ P1, m3, P5 ] },
+
+        { name: "Augmented (+)", suffix: "aug", intervals: [ P1, M3, A5 ] },
+        { name: "Diminished (°)", suffix: "dim", intervals: [ P1, m3, d5 ] },
+
+        { name: "Suspended 2", suffix: "sus2", intervals: [ P1, M2, P5 ] },
+        { name: "Suspended 4", suffix: "sus4", intervals: [ P1, P4, P5 ] },
+
+        { name: "Major sixth", suffix: "6", intervals: [ P1, M3, P5, M6 ] },
+        { name: "Minor sixth", suffix: "m6", intervals: [ P1, m3, P5, M6 ] },
+
+        { name: "Dominant seventh", suffix: "7", intervals: [ P1, M3, P5, m7 ] },
+        { name: "Major seventh", suffix: "maj7", intervals: [ P1, M3, P5, M7 ] },
+        { name: "Minor seventh", suffix: "m7", intervals: [ P1, m3, P5, m7 ] },
+        { name: "Augmented seventh (7+5)", suffix: "aug7", intervals: [ P1, M3, A5, m7 ] },
+        { name: "Diminished seventh", suffix: "dim7", intervals: [ P1, m3, d5, d7 ] },
+        { name: "Half diminished seventh (m7-5)", suffix: "m7dim5", intervals: [ P1, m3, d5, m7 ] },
+
+        
+        //7+5
+        //m7-5
+
+        { name: "Added ninth", suffix: "add9", intervals: [ P1, M3, P5, M9 ] },
+        { name: "Dominant ninth", suffix: "9", intervals: [ P1, M3, P5, m7, M9 ] },
+        { name: "Major ninth", suffix: "maj9", intervals: [ P1, M3, P5, M7, M9 ] },
+        { name: "Minor ninth", suffix: "m9", intervals: [ P1, m3, P5, m7, M9 ] },
+
         // 9th, 11th, 13th
     ];
 
@@ -244,13 +271,13 @@
       let chord = CHORDS[chord_index];
 
       let table_content = document.getElementById("chord-picker").children[0].children[0].children;
-      for (let i = 0; i < table_content.length; ++i) {
+      for (let i = 1; i < table_content.length; ++i) {
         let row = table_content[i].children;
         for (let j = 1; j < row.length; ++j) {
           row[j].classList.remove("selected");
         }
       }
-      table_content[chord_index].children[1 + note_index].classList.add("selected");
+      table_content[chord_index + 1].children[1 + note_index].classList.add("selected");
 
 
       let finger_positions = [];
@@ -275,6 +302,13 @@
     function create_chord_picker() {
       let chord_picker = "<table>";
 
+      chord_picker += "<tr><td></td>";
+      for (let note_index = 0; note_index < NOTES.length; ++note_index) {
+        let note = NOTES[note_index];
+        chord_picker += `<td>${note.names.join(" / ")}</td>`;
+      }
+      chord_picker += "</tr>";
+
       for (let chord_index = 0; chord_index < CHORDS.length; ++chord_index) {
         let chord = CHORDS[chord_index];
 
@@ -283,14 +317,7 @@
 
         for (let note_index = 0; note_index < NOTES.length; ++note_index) {
           let note = NOTES[note_index];
-
-          let names_string = "";
-          for (let i = 0; i < chord.suffix.length; ++i) {
-            if (i > 0) names_string += "<br>";
-            names_string += note.name + chord.suffix[i];
-          }
-
-          chord_picker += `<td onclick="chord_picker_onclick(${note_index}, ${chord_index})">${names_string}</td>`;
+          chord_picker += `<td class="selectable" onclick="chord_picker_onclick(${note_index}, ${chord_index})">${note.names[0] + chord.suffix}</td>`;
         }
 
         chord_picker += "</tr>";
