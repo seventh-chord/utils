@@ -4,9 +4,16 @@
   <title>Guitar chords</title>
 
   <style>
-    #fretboard, #chord-picker {
+    #fretboard, #keys, #intervals, #chords {
       display: inline-block;
       vertical-align: top;
+      margin: 5px;
+    }
+    h3 {
+      margin-top: 8px;
+      margin-bottom: 5px;
+      margin-left: 5px;
+      font-size: 1.1em;
     }
     
     #fretboard {
@@ -80,71 +87,171 @@
     }
 
 
-
-    #chord-picker {
+    #keys table {
       user-select: none;
+      border-collapse: collapse;
+      cursor: pointer;
     }
 
-    #chord-picker table {
+    #keys td {
+      border: 1px solid black;
+      padding: 10px;
       text-align: center;
+    }
+
+    #keys td:not(.selected):hover {
+      background: #eef;
+    }
+
+    #keys .selected {
+      background: #ccf;
+    }
+
+
+    #chords table {
+      user-select: none;
+      border-collapse: collapse;
+      cursor: pointer;
+    }
+
+    #chords td {
+      border: 1px solid black;
+      padding: 10px;
+      text-align: center;
+      width: 280px;
+    }
+    
+    #chords td:not(.selected):hover {
+      background: #eef;
+    }
+
+    #chords .selected {
+      background: #ccf;
+    }
+
+
+    #intervals table {
+      user-select: none;
       border-collapse: collapse;
     }
 
-    #chord-picker td {
+    #intervals td {
       border: 1px solid black;
       padding: 10px;
+      text-align: center;
     }
 
-    #chord-picker tr:first-child,
-    #chord-picker td:first-child {
-      font-style: italic;
-      font-weight: bold;
+    #intervals tr.marked td {
+      background: #dfd;
     }
-
-    #chord-picker td.selectable {
-      width: 75px;
-    }
-
-    #chord-picker td.selectable:not(.selected):hover {
-      background: #ddf;
-    }
-
-    #chord-picker td.selected {
-      background: #bbf;
+    #intervals tr td.marked {
+      background: #afa;
     }
   </style>
 </head>
 <body>
-
-  <h1>Guitar chords</h1>
-
   <div id="fretboard">
     <!-- Content is generated using javascript -->
   </div>
 
-  <div id="chord-picker">
+  <div id="keys">
+    <h3>:: Keys</h3>
+    <table>
+      <tr><td colspan=2 class="selected">C</td></tr>
+      <tr><td>C#</td><td>Db</td></tr>
+      <tr><td colspan=2>D</td></tr>
+      <tr><td>D#</td><td>Eb</td></tr>
+      <tr><td colspan=2>E</td></tr>
+      <tr><td colspan=2>F</td></tr>
+      <tr><td>F#</td><td>Gb</td></tr>
+      <tr><td colspan=2>G</td></tr>
+      <tr><td>G#</td><td>Ab</td></tr>
+      <tr><td colspan=2>A</td></tr>
+      <tr><td>A#</td><td>Bb</td></tr>
+      <tr><td colspan=2>B</td></tr>
+    </table>
   </div>
-  
+
+  <div id="chords">
+    <h3>:: Scales</h3>
+    <table>
+      <tr><td data-intervals="P1 M2 M3 P4 P5 M6 M7 P8">Major scale</td></tr>
+      <tr><td data-intervals="P1 M2 m3 P4 P5 m6 m7 P8">Natural minor scale</td></tr>
+      <tr><td data-intervals="P1 M2 m3 P4 P5 m6 M7 P8">Harmonic minor scale</td></tr>
+      <tr><td data-intervals="P1 M2 m3 P4 P5 M6 M7 P8">Melodic minor scale (asc.)</td></tr>
+      <tr><td data-intervals="P1 M2 m3 P4 P5 m6 m7 P8">Melodic minor scale (desc.)</td></tr>
+    </table>
+
+    <h3>:: Common chords</h3>
+    <table>
+      <tr><td data-intervals="P1 M3 P5" class="selected">Major triad</td></tr>
+      <tr><td data-intervals="P1 m3 P5">Minor triad</td></tr>
+      <tr><td data-intervals="P1 M3 A5">Augmented (aug <i>or</i> +)</td></tr>
+      <tr><td data-intervals="P1 m3 d5">Diminished (dim <i>or</i> &deg;)</td></tr>
+      <tr><td data-intervals="P1 M2 P5">Suspended (sus<sup>2</sup>)</td></tr>
+      <tr><td data-intervals="P1 P4 P5">Suspended (sus<sup>4</sup>)</td></tr>
+    </table>
+
+    <h3>:: Seventh chords</h3>
+    <table>
+      <tr><td data-intervals="P1 M3 P5 m7">Dominant seventh (<sup>7</sup>)</td></tr>
+      <tr><td data-intervals="P1 M3 P5 M7">Major seventh (M<sup>7</sup>)</td></tr>
+      <tr><td data-intervals="P1 m3 P5 m7">Minor seventh (m<sup>7</sup>)</td></tr>
+      <tr><td data-intervals="P1 M3 A5 m7">Augmented seventh (aug<sup>7</sup> <i>or</i> +<sup>7</sup> <i>or</i> <sup>7♯5</sup>)</td></tr>
+      <tr><td data-intervals="P1 m3 d5 d7">Diminished seventh (dim<sup>7</sup> <i>or</i> &deg;<sup>7</sup>)</td></tr>
+      <tr><td data-intervals="P1 m3 d5 m7">Half-diminished seventh (m<sup>7♭5</sup> <i>or</i> <sup>ø7</sup>)</td></tr>
+    </table>
+
+    <h3>:: Other chords</h3>
+    <table>
+      <tr><td data-intervals="P1 M3 P5 M6">Major sixth (<sup>6</sup>)</td></tr>
+      <tr><td data-intervals="P1 m3 P5 M6">Minor sixth (m<sup>6</sup>)</td></tr>
+      <tr><td data-intervals="P1 M3 P5 M9">Added ninth (add<sup>9</sup>)</td></tr>
+      <tr><td data-intervals="P1 M3 P5 m7 M9">Dominant ninth (<sup>9</sup>)</td></tr>
+      <tr><td data-intervals="P1 M3 P5 M7 M9">Major ninth (M<sup>9</sup>)</td></tr>
+      <tr><td data-intervals="P1 m3 P5 m7 M9">Minor ninth (m<sup>9</sup>)</td></tr>
+    </table>
+  </div>
+
+  <div id="intervals">
+    <h3>:: Intervals</h3>
+    <table>
+      <tr><td colspan=2 title="Unison">P1</td><td>+0</td><td>?</td></tr>
+      <tr><td colspan=2 title="Minor second">m2</td><td>+1</td><td>?</td></tr>
+      <tr><td title="Major second">M2</td><td title="Major ninth">M9</td><td>+2</td><td>?</td></tr>
+      <tr><td colspan=2 title="Minor third">m3</td><td>+3</td><td>?</td></tr>
+      <tr><td colspan=2 title="Major third">M3</td><td>+4</td><td>?</td></tr>
+      <tr><td colspan=2 title="Perfect fourth">P4</td><td>+5</td><td>?</td></tr>
+      <tr><td colspan=2 title="Diminished fifth">d5</td><td>+6</td><td>?</td></tr>
+      <tr><td colspan=2 title="Perfect fifth">P5</td><td>+7</td><td>?</td></tr>
+      <tr><td title="Augmented fifth">A5</td><td title="Minor sixth">m6</td><td>+8</td><td>?</td></tr>
+      <tr><td title="Major sixth">M6</td><td title="Diminished seventh">d7</td><td>+9</td><td>?</td></tr>
+      <tr><td colspan=2 title="Minor seventh">m7</td><td>+10</td><td>?</td></tr>
+      <tr><td colspan=2 title="Major seventh">M7</td><td>+11</td><td>?</td></tr>
+      <tr><td colspan=2 title="Octave">P8</td><td>+12</td><td>?</td></tr>
+
+      <!--
+      <tr><td colspan=2 title="Minor ninth">m9</td><td>+13</td><td>?</td></tr>
+      <tr><td colspan=2 title="Major ninth">M9</td><td>+14</td><td>?</td></tr>
+      <tr><td colspan=2 title="Minor tenth">m10</td><td>+15</td><td>?</td></tr>
+      <tr><td colspan=2 title="Major tenth">M10</td><td>+16</td><td>?</td></tr>
+      <tr><td colspan=2 title="Perfect eleventh">P11</td><td>+17</td><td>?</td></tr>
+      <tr><td colspan=2 title="Augmented eleventh">A11</td><td>+18</td><td>?</td></tr>
+      <tr><td colspan=2 title="Diminished twelfth">d12</td><td>+18</td><td>?</td></tr>
+      <tr><td colspan=2 title="Perfect twelfth">P12</td><td>+19</td><td>?</td></tr>
+      <tr><td colspan=2 title="Minor thirteenth">m13</td><td>+20</td><td>?</td></tr>
+      <tr><td colspan=2 title="Major thirteenth">M13</td><td>+21</td><td>?</td></tr>
+      -->
+    </table>
+  </div>
+
   <script>
+    let key_rows = document.getElementById("keys").getElementsByTagName("tr");
+    let key_cells = document.getElementById("keys").getElementsByTagName("td");
+    let chord_cells = document.getElementById("chords").getElementsByTagName("td");
+    let interval_rows = document.getElementById("intervals").getElementsByTagName("tr");
+
     const FRETS = 15;
-    const SEMITONES_IN_OCTAVE = 12;
-
-    let NOTES = [
-      { names: [ "C" ], offset: 0 },
-      { names: [ "C#", "Db" ], offset: 1 },
-      { names: [ "D" ], offset: 2 },
-      { names: [ "D#", "Eb" ], offset: 3 },
-      { names: [ "E" ], offset: 4 },
-      { names: [ "F" ], offset: 5 },
-      { names: [ "F#", "Gb" ], offset: 6 },
-      { names: [ "G" ], offset: 7 },
-      { names: [ "G#", "Ab" ], offset: 8 },
-      { names: [ "A" ], offset: 9 },
-      { names: [ "A#", "Bb" ], offset: 10 },
-      { names: [ "B" ], offset: 11 },
-    ];
-
-    // C is 0
     const STRING_OFFSETS = [
       4, // E
       9, // A
@@ -154,71 +261,7 @@
       4, // e
     ];
 
-
-    // Intervals
-    const P1  = { semitones: 0,  short: "P1",  name: "Unison" };
-    const m2  = { semitones: 1,  short: "m2",  name: "Minor second" };
-    const M2  = { semitones: 2,  short: "M2",  name: "Major second" };
-    const m3  = { semitones: 3,  short: "m3",  name: "Minor third" };
-    const M3  = { semitones: 4,  short: "M3",  name: "Major third" };
-    const P4  = { semitones: 5,  short: "P4",  name: "Perfect fourth" };
-    const A4  = { semitones: 6,  short: "A4",  name: "Augmented fourth" };
-    const d5  = { semitones: 6,  short: "d5",  name: "Diminished fifth" };
-    const P5  = { semitones: 7,  short: "P5",  name: "Perfect fifth" };
-    const A5  = { semitones: 8,  short: "A5",  name: "Augmented fifth" };
-    const m6  = { semitones: 8,  short: "m6",  name: "Minor sixth" };
-    const M6  = { semitones: 9,  short: "M6",  name: "Major sixth" };
-    const d7  = { semitones: 9,  short: "d7",  name: "Diminished seventh" };
-    const m7  = { semitones: 10, short: "m7",  name: "Minor seventh" };
-    const M7  = { semitones: 11, short: "M7",  name: "Major seventh" };
-    const P8  = { semitones: 12, short: "P8",  name: "Octave" };
-    const m9  = { semitones: 13, short: "m9",  name: "Minor ninth" };
-    const M9  = { semitones: 14, short: "M9",  name: "Major ninth" };
-    const m10 = { semitones: 15, short: "m10", name: "Minor tenth" };
-    const M10 = { semitones: 16, short: "M10", name: "Major tenth" };
-    const P11 = { semitones: 17, short: "P11", name: "Perfect eleventh" };
-    const A11 = { semitones: 18, short: "A11", name: "Augmented eleventh" };
-    const d12 = { semitones: 18, short: "d12", name: "Diminished twelfth" };
-    const P12 = { semitones: 19, short: "P12", name: "Perfect twelfth" };
-    const m13 = { semitones: 20, short: "m13", name: "Minor thirteenth" };
-    const M13 = { semitones: 21, short: "M13", name: "Major thirteenth" };
-
-
-    const CHORDS = [
-        { name: "Major triad", suffix: "", intervals: [ P1, M3, P5 ] },
-        { name: "Minor triad", suffix: "m", intervals: [ P1, m3, P5 ] },
-
-        { name: "Augmented (+)", suffix: "aug", intervals: [ P1, M3, A5 ] },
-        { name: "Diminished (°)", suffix: "dim", intervals: [ P1, m3, d5 ] },
-
-        { name: "Suspended 2", suffix: "sus2", intervals: [ P1, M2, P5 ] },
-        { name: "Suspended 4", suffix: "sus4", intervals: [ P1, P4, P5 ] },
-
-        { name: "Major sixth", suffix: "6", intervals: [ P1, M3, P5, M6 ] },
-        { name: "Minor sixth", suffix: "m6", intervals: [ P1, m3, P5, M6 ] },
-
-        { name: "Dominant seventh", suffix: "7", intervals: [ P1, M3, P5, m7 ] },
-        { name: "Major seventh", suffix: "maj7", intervals: [ P1, M3, P5, M7 ] },
-        { name: "Minor seventh", suffix: "m7", intervals: [ P1, m3, P5, m7 ] },
-        { name: "Augmented seventh (7+5)", suffix: "aug7", intervals: [ P1, M3, A5, m7 ] },
-        { name: "Diminished seventh", suffix: "dim7", intervals: [ P1, m3, d5, d7 ] },
-        { name: "Half diminished seventh (m7-5)", suffix: "m7dim5", intervals: [ P1, m3, d5, m7 ] },
-
-        
-        //7+5
-        //m7-5
-
-        { name: "Added ninth", suffix: "add9", intervals: [ P1, M3, P5, M9 ] },
-        { name: "Dominant ninth", suffix: "9", intervals: [ P1, M3, P5, m7, M9 ] },
-        { name: "Major ninth", suffix: "maj9", intervals: [ P1, M3, P5, M7, M9 ] },
-        { name: "Minor ninth", suffix: "m9", intervals: [ P1, m3, P5, m7, M9 ] },
-
-        // 9th, 11th, 13th
-    ];
-
-
-
-    function show_finger_positions(finger_positions) {
+    function update_fretboard(finger_positions) {
       let fretboard = "<table>";
       for (let fret = 0; fret <= FRETS; ++fret) {
         fretboard += "<tr>"; 
@@ -266,70 +309,105 @@
       document.getElementById("fretboard").innerHTML = fretboard;
     }
 
-    function chord_picker_onclick(note_index, chord_index) {
-      let note = NOTES[note_index];
-      let chord = CHORDS[chord_index];
+    function update_intervals() {
+      let root_name = null;
+      let root_offset = null;
 
-      let table_content = document.getElementById("chord-picker").children[0].children[0].children;
-      for (let i = 1; i < table_content.length; ++i) {
-        let row = table_content[i].children;
-        for (let j = 1; j < row.length; ++j) {
-          row[j].classList.remove("selected");
-        }
-      }
-      table_content[chord_index + 1].children[1 + note_index].classList.add("selected");
-
-
-      let finger_positions = [];
-
-      for (let string = 1; string <= STRING_OFFSETS.length; ++string) {
-        for (let fret = 0; fret <= FRETS; ++fret) {
-          for (let i = 0; i < chord.intervals.length; ++i) {
-            let neck_semitone = (STRING_OFFSETS[string - 1] + fret) % SEMITONES_IN_OCTAVE;
-            let chord_semitone = (note.offset + chord.intervals[i].semitones) % SEMITONES_IN_OCTAVE;
-
-            if (neck_semitone == chord_semitone) {
-              finger_positions.push({ fret: fret, string: string, label: chord.intervals[i].short });
-              break;
-            }
+      find_root:
+      for (let i = 0; i < key_rows.length; ++i) {
+        for (let j = 0; j < key_rows[i].children.length; ++j) {
+          if (key_rows[i].children[j].classList.contains("selected")) {
+            root_name = key_rows[i].children[j].innerText;
+            root_offset = i;
+            break find_root;
           }
         }
       }
 
-      show_finger_positions(finger_positions);
-    }
-
-    function create_chord_picker() {
-      let chord_picker = "<table>";
-
-      chord_picker += "<tr><td></td>";
-      for (let note_index = 0; note_index < NOTES.length; ++note_index) {
-        let note = NOTES[note_index];
-        chord_picker += `<td>${note.names.join(" / ")}</td>`;
+      let chord_cell = null;
+      find_chord_cell:
+      for (let i = 0; i < chord_cells.length; ++i) {
+        if (chord_cells[i].classList.contains("selected")) {
+          chord_cell = chord_cells[i];
+          break find_chord_cell;
+        }
       }
-      chord_picker += "</tr>";
+      let chord_interval_names = chord_cell.dataset.intervals.split(" ");
+      let chord_intervals = [];
 
-      for (let chord_index = 0; chord_index < CHORDS.length; ++chord_index) {
-        let chord = CHORDS[chord_index];
+      // Update note names in interval table
+      let flat = root_name == "F" || root_name.endsWith("b"); // Is this right? Also, where does this stem from?
+      for (let i = 0; i < interval_rows.length; ++i) {
+        let tds = interval_rows[i].children;
+        
+        let semitones = parseInt(tds[tds.length - 2].innerText);
+        let offset = (root_offset + semitones) % key_rows.length;
+        let notes = key_rows[offset].children;
 
-        chord_picker += "<tr>";
-        chord_picker += `<td>${chord.name}</td>`;
+        // TODO this is very much incorrect.
+        // I think it also depends on which interval was used to pick the note...
+        // This makes very little sense to me though...
+        let note_name = notes[flat? (notes.length - 1) : 0].innerText
 
-        for (let note_index = 0; note_index < NOTES.length; ++note_index) {
-          let note = NOTES[note_index];
-          chord_picker += `<td class="selectable" onclick="chord_picker_onclick(${note_index}, ${chord_index})">${note.names[0] + chord.suffix}</td>`;
+        tds[tds.length - 1].innerText = note_name;
+
+        // Mark the rows of the interval table which are used in this chord
+        interval_rows[i].classList.remove("marked");
+        for (let td_index = 0; td_index < tds.length; ++td_index) {
+          tds[td_index].classList.remove("marked");
         }
 
-        chord_picker += "</tr>";
+        for (let td_index = 0; td_index < tds.length; ++td_index) {
+          if (chord_interval_names.includes(tds[td_index].textContent)) {
+            tds[td_index].classList.add("marked");
+            interval_rows[i].classList.add("marked");
+            chord_intervals[offset] = note_name;
+          }
+        }
       }
-      chord_picker += "</table>";
 
-      document.getElementById("chord-picker").innerHTML = chord_picker;
+      // Show notes on fretboard
+      let finger_positions = [];
+      for (let fret = 0; fret < FRETS; ++fret) {
+        for (let string = 1; string <= STRING_OFFSETS.length; ++string) {
+          let fretboard_offset = (STRING_OFFSETS[string - 1] + fret) % key_rows.length;
+          let label = chord_intervals[fretboard_offset];
+          if (label) {
+            finger_positions.push({ fret: fret, string: string, label: label });
+          }
+        }
+      }
+      update_fretboard(finger_positions);
     }
 
+    update_intervals();
+
+
+    function key_cell_onclick() {
+      for (let i = 0; i < key_cells.length; ++i) {
+        key_cells[i].classList.remove("selected");
+      }
+      this.classList.add("selected");
+
+      update_intervals();
+    }
+
+    function chord_cell_onclick() {
+      for (let i = 0; i < chord_cells.length; ++i) {
+        chord_cells[i].classList.remove("selected");
+      }
+      this.classList.add("selected");
+      
+      update_intervals();
+    }
+
+    for (let i = 0; i < key_cells.length; ++i) {
+      key_cells[i].onclick = key_cell_onclick;
+    }
+    for (let i = 0; i < chord_cells.length; ++i) {
+      chord_cells[i].onclick = chord_cell_onclick;
+    }
     
-    create_chord_picker();
-    chord_picker_onclick(Math.floor(Math.random() * NOTES.length), Math.floor(Math.random() * CHORDS.length));
   </script>
 </body>
 </html>
