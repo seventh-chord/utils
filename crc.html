@@ -73,29 +73,26 @@
   <table>
     <tr>
       <td>Normal</td>
-      <td><input id="field_normal_hex" type="text"></td>
-      <td><input id="field_normal_bin" type="text" value="11"></td>
-      <td><span class="note">MSB-first. The MSB (i.e. the leftmost) is omitted and implicitly 1.</span></td>
+      <td><input id="field_normal" type="text"></td>
+      <td><span class="note">If the bit with value 2<sup>n</sup> is set, the polynomial contains x<sup>n</sup>. x<sup>N</sup> is implicit.</span></td>
     </tr>
     <tr>
       <td>Reverse</td>
-      <td><input id="field_reverse_hex" type="text"></td>
-      <td><input id="field_reverse_bin" type="text"></td>
-      <td><span class="note">LSB-first. The MSB (i.e. the rightmost bit) is omitted and implicitly 1.</span></td>
+      <td><input id="field_reverse" type="text"></td>
+      <td><span class="note">If the bit with value 2<sup>n</sup> is set, the polynomial contains x<sup>N - n - 1</sup>. x<sup>N</sup> is implicit.</span></td>
     </tr>
     <tr>
-      <td>Reversed reciprocal</td>
-      <td><input id="field_reciprocal_hex" type="text"></td>
-      <td><input id="field_reciprocal_bin" type="text"></td>
-      <td><span class="note">MSB-first. The LSB (i.e. the rightmost bit) is omitted and implicitly 1.</span></td>
+      <td>Koopman</td>
+      <td><input id="field_reciprocal" type="text"></td>
+      <td><span class="note">If the bit with value 2<sup>n</sup> is set, the polynomial contains x<sup>n + 1</sup>. x<sup>0</sup> is implicit.</span></td>
     </tr>
     <tr>
-      <td>Width</td>
+      <td>Width (N)</td>
       <td><input id="field_width" type="number" value=3></td>
     </tr>
     <tr>
       <td>Polynomial</td>
-      <td colspan=3><span id="span_polynomial" class="code"></span></td>
+      <td colspan=2><span id="span_polynomial" class="code"></span></td>
     </tr>
   </table>
 
@@ -129,20 +126,6 @@
   </p>
 </div>
 
-<div>
-  <h2>Division method</h2>
-
-  <table>
-    <tr>
-      <td>Data bits</td>
-      <td><input id="division_field" type="text" value="11010011101100"></td>
-    </tr>
-  </table>
-
-  <pre id="division_output">
-  </pre>
-</div>
-
 <script>
   const CHAR_SPACE = " ".charCodeAt(0);
   const CHAR_ZERO = "0".charCodeAt(0);
@@ -150,38 +133,7 @@
   const CHAR_LOWERCASE_A = "a".charCodeAt(0);
   const CHAR_UPPERCASE_A = "A".charCodeAt(0);
 
-  function parse_bin(string) {
-    string = string.trim();
-    let bits = [];
-    for (let i = 0; i < string.length; ++i) {
-      let c = string.charCodeAt(i);
-      if (c == CHAR_SPACE) {
-        // Ok
-      } else if (c == CHAR_ZERO) {
-        bits.push(0);
-      } else if (c == CHAR_ONE) {
-        bits.push(1);
-      } else {
-        bits = null;
-        break;
-      }
-    }
-    if (bits && bits.length == 0) {
-      bits = null;
-    }
-    return bits;
-  }
-
-  function bits_to_bin_string(bits) {
-    let string = "";
-    for (let i = bits.length - 1; i >= 0; --i) {
-      let bit = bits[bits.length - i - 1];
-      string += bit? "1" : "0";
-    }
-    return string;
-  }
-
-  function parse_hex(string) {
+  function hex_string_to_bits(string) {
     string = string.trim();
 
     if (string.slice(0, 2) == "0x") {
@@ -236,42 +188,29 @@
 
 
 
-  let field_normal_bin = document.getElementById("field_normal_bin");
-  let field_normal_hex = document.getElementById("field_normal_hex");
-  let field_reverse_bin = document.getElementById("field_reverse_bin");
-  let field_reverse_hex = document.getElementById("field_reverse_hex");
-  let field_reciprocal_bin = document.getElementById("field_reciprocal_bin");
-  let field_reciprocal_hex = document.getElementById("field_reciprocal_hex");
+  let field_normal = document.getElementById("field_normal");
+  let field_reverse = document.getElementById("field_reverse");
+  let field_reciprocal = document.getElementById("field_reciprocal");
   let field_width = document.getElementById("field_width");
   let span_polynomial = document.getElementById("span_polynomial");
   let span_polynomial_degree = document.getElementById("span_polynomial_degree");
   let span_crc_width = document.getElementById("span_crc_width");
 
-  let division_field = document.getElementById("division_field");
-  let division_output = document.getElementById("division_output");
-
 
   let g_polynomial = null;
 
   function polynomial_update(field) {
-    field_normal_bin.classList.remove("bad");
-    field_normal_hex.classList.remove("bad");
-    field_reverse_bin.classList.remove("bad");
-    field_reverse_hex.classList.remove("bad");
-    field_reciprocal_bin.classList.remove("bad");
-    field_reciprocal_hex.classList.remove("bad");
+    field_normal.classList.remove("bad");
+    field_reverse.classList.remove("bad");
+    field_reciprocal.classList.remove("bad");
     field_width.classList.remove("bad");
 
     // Normal variants, prepend MSB 1
-    if (field == field_normal_bin) {
-      g_polynomial = parse_bin(field_normal_bin.value);
+    if (field == field_normal || field == field_width) {
+      g_polynomial = hex_string_to_bits(field_normal.value);
       if (!g_polynomial) field.classList.add("bad");
     }
-    if (field == field_normal_hex || field == field_width) {
-      g_polynomial = parse_hex(field_normal_hex.value);
-      if (!g_polynomial) field.classList.add("bad");
-    }
-    if (g_polynomial && (field == field_normal_hex || field == field_normal_bin || field == field_width)) {
+    if (g_polynomial && (field == field_normal || field == field_width)) {
       while (g_polynomial && g_polynomial.length > 1 && g_polynomial[0] == 0) {
         g_polynomial = g_polynomial.slice(1);
       }
@@ -284,37 +223,28 @@
         g_polynomial = prefix.concat(g_polynomial);
       } else {
         g_polynomial = null;
-        field_normal_bin.classList.add("bad");
-        field_normal_hex.classList.add("bad");
+        field_normal.classList.add("bad");
         field_width.classList.add("bad");
       }
     }
 
     // Reverse variants
-    if (field == field_reverse_bin) {
-      g_polynomial = parse_bin(field_reverse_bin.value);
-      if (!g_polynomial) field_reverse_bin.classList.add("bad");
+    if (field == field_reverse) {
+      g_polynomial = hex_string_to_bits(field_reverse.value);
+      if (!g_polynomial) field_reverse.classList.add("bad");
     }
-    if (field == field_reverse_hex) {
-      g_polynomial = parse_hex(field_reverse_hex.value);
-      if (!g_polynomial) field_reverse_hex.classList.add("bad");
-    }
-    if (g_polynomial && (field == field_reverse_bin || field == field_reverse_hex)) {
+    if (g_polynomial && field == field_reverse) {
       field_width.value = g_polynomial.length;
       g_polynomial = g_polynomial.concat([1]);
       g_polynomial.reverse();
     }
 
     // Reciprocal variants
-    if (field == field_reciprocal_bin) {
-      g_polynomial = parse_bin(field_reciprocal_bin.value);
-      if (!g_polynomial) field_reciprocal_bin.classList.add("bad");
+    if (field == field_reciprocal) {
+      g_polynomial = hex_string_to_bits(field_reciprocal.value);
+      if (!g_polynomial) field_reciprocal.classList.add("bad");
     }
-    if (field == field_reciprocal_hex) {
-      g_polynomial = parse_hex(field_reciprocal_hex.value);
-      if (!g_polynomial) field_reciprocal_hex.classList.add("bad");
-    }
-    if (g_polynomial && (field == field_reciprocal_bin || field == field_reciprocal_hex)) {
+    if (g_polynomial && field == field_reciprocal) {
       while (g_polynomial.length > 1 && g_polynomial[0] == 0) {
         g_polynomial = g_polynomial.slice(1);
       }
@@ -324,23 +254,14 @@
 
     // Update other fields
     if (g_polynomial) {
-      if (field != field_normal_bin) {
-        field_normal_bin.value = bits_to_bin_string(g_polynomial.slice(1));
+      if (field != field_normal) {
+        field_normal.value = bits_to_hex_string(g_polynomial.slice(1));
       }
-      if (field != field_normal_hex) {
-        field_normal_hex.value = bits_to_hex_string(g_polynomial.slice(1));
+      if (field != field_reverse) {
+        field_reverse.value = bits_to_hex_string(Array.from(g_polynomial.slice(1)).reverse());
       }
-      if (field != field_reverse_bin) {
-        field_reverse_bin.value = bits_to_bin_string(Array.from(g_polynomial.slice(1)).reverse());
-      }
-      if (field != field_reverse_hex) {
-        field_reverse_hex.value = bits_to_hex_string(Array.from(g_polynomial.slice(1)).reverse());
-      }
-      if (field != field_reciprocal_bin) {
-        field_reciprocal_bin.value = bits_to_bin_string(g_polynomial.slice(0, g_polynomial.length - 1));
-      }
-      if (field != field_reciprocal_hex) {
-        field_reciprocal_hex.value = bits_to_hex_string(g_polynomial.slice(0, g_polynomial.length - 1));
+      if (field != field_reciprocal) {
+        field_reciprocal.value = bits_to_hex_string(g_polynomial.slice(0, g_polynomial.length - 1));
       }
 
       let poly_string = "";
@@ -363,82 +284,21 @@
       span_polynomial_degree.innerText = g_polynomial.length;
       span_crc_width.innerText = g_polynomial.length - 1;
     }
-
-    division_field_update();
-  }
-
-  function division_field_update() {
-    division_field.classList.remove("bad");
-
-    let data_bits = parse_bin(division_field.value);
-    if (!data_bits) {
-      division_field.classList.add("bad");
-    } else if (!g_polynomial) {
-      // Sadge
-    } else {
-      let data_len = data_bits.length;
-      let crc_len = g_polynomial.length - 1;
-      data_bits = data_bits.concat(Array(crc_len).fill(0));
-
-      let string = "";
-
-      while (string.length < 10000) {
-        let polynomial_offset = 0;
-        while (polynomial_offset < data_len && data_bits[polynomial_offset] == 0) {
-          ++polynomial_offset;
-        }
-
-        if (string.length == 0) string += "  ";
-        else                    string += "= ";
-
-        let data_string = bits_to_bin_string(data_bits);
-        string += data_string.slice(0, data_len) + " " + data_string.slice(data_len);
-        string += "\n";
-
-        if (polynomial_offset >= data_len) {
-          break;
-        }
-
-        string += "^ ";
-
-        let polynomial_string = "";
-        for (let i = 0; i < polynomial_offset; ++i) polynomial_string += " ";
-        polynomial_string += bits_to_bin_string(g_polynomial, false);
-        string += polynomial_string.slice(0, data_len) + " " + polynomial_string.slice(data_len);
-        string += "\n";
-
-        for (let i = 0; i < g_polynomial.length; ++i) {
-          data_bits[polynomial_offset + i] ^= g_polynomial[i];
-        }
-      }
-
-      string += "\n";
-      let crc = data_bits.slice(data_len);
-      string += "CRC is " + bits_to_bin_string(crc) + " or " + bits_to_hex_string(crc);
-
-      division_output.innerText = string;
-    }
   }
 
 
-  field_normal_bin.oninput = function() { polynomial_update(field_normal_bin); };
-  field_normal_hex.oninput = function() { polynomial_update(field_normal_hex); };
-  field_reverse_bin.oninput = function() { polynomial_update(field_reverse_bin); };
-  field_reverse_hex.oninput = function() { polynomial_update(field_reverse_hex); };
-  field_reciprocal_bin.oninput = function() { polynomial_update(field_reciprocal_bin); };
-  field_reciprocal_hex.oninput = function() { polynomial_update(field_reciprocal_hex); };
+  field_normal.oninput = function() { polynomial_update(field_normal); };
+  field_reverse.oninput = function() { polynomial_update(field_reverse); };
+  field_reciprocal.oninput = function() { polynomial_update(field_reciprocal); };
   field_width.oninput = function() { polynomial_update(field_width); };
-  field_normal_bin.oninput();
-
-  division_field.oninput = division_field_update;
 
 
   function common_polynomial_click() {
     let bits = parseInt(this.children[1].innerText.split(" ")[0]);
     let hex = this.children[2].children[0].innerText;
     field_width.value = bits;
-    field_normal_hex.value = hex;
-    polynomial_update(field_normal_hex);
+    field_normal.value = hex;
+    polynomial_update(field_normal);
   }
 
   let common_polynomials = document.getElementById("table_common_polynomials").children[0].children;
@@ -446,6 +306,8 @@
     let row = common_polynomials[i];
     row.onclick = common_polynomial_click;
   }
+
+  common_polynomials[common_polynomials.length - 1].onclick();
 
 </script>
 
