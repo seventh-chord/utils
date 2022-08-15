@@ -82,13 +82,6 @@
 <div id="left_column"><div>
 
 <div>
-  <h2>Introduction</h2>
-
-  <p><b>TODO</b> also learn about other common checksums, like Adler32 and fnv1-a</p>
-  <p><b>TODO</b> write some notes about the properties of CRCs</p>
-</div>
-
-<div>
   <h2>Polynomial</h2>
   <table>
     <tr>
@@ -136,7 +129,7 @@
     <tr><td>CAN FD (messages &le; 16 bytes)</td><td>17 bits</td><td><span class="code">0x1685b</span></td></tr>
     <tr><td>CAN FD (messages &gt; 16 bytes)</td><td>21 bits</td><td><span class="code">0x102899</span></td></tr>
     <tr data-reverse data-start-one data-flip><td>CRC-32</td><td>32 bits</td><td><span class="code">0x04c11db7</span></td><td class="note">Ethernet, etc.</td></tr>
-    <tr data-reverse data-start-one data-flip><td>CRC-32C</td><td>32 bits</td><td><span class="code">0x1edc6f41</span></td><td class="note">Implemented in hardware on x64 processors</td></tr>
+    <tr data-reverse data-start-one data-flip><td>CRC-32C</td><td>32 bits</td><td><span class="code">0x1edc6f41</span></td><td class="note">Implemented in hardware on x64 processors.</td></tr>
     
   </table>
 </div>
@@ -174,10 +167,19 @@
 </div>
 
 <div>
-  <h2>Resources</h2>
+  <h2>Hamming distance</h2>
 
-  <p>Philip Koopman's list of best polynomials: <a href="http://users.ece.cmu.edu/~koopman/crc/index.html">http://users.ece.cmu.edu/~koopman/crc/index.html</a></p>
-  <p>Ross N. Williams guide: <a href="http://www.ross.net/crc/download/crc_v3.txt">http://www.ross.net/crc/download/crc_v3.txt</a></p>
+  <p>
+    Given a message including a valid CRC checksum, the Hamming distance of the message describes the number of bits that need to be flipped to get another message with valid checksum.
+    A Hamming distance of <i>n</i> means that all <i>(n - 1)</i>-bit errors will lead to invalid messages (i.e. the errors can  be detected).
+    All messages with checksum have a Hamming distance of at least 2, meaning that a single bit flip always will be detected using a CRC (as long as you don't make a degenerate polynomial, e.g. by setting all bits to 0).
+  </p>
+
+  <p>
+    Philip Koopman <a href="http://users.ece.cmu.edu/~koopman/crc/index.html">hosts a list of best polynomials</a>, which includes information about the maximum message lengths of these polynomials at various Hamming distances.
+    The notation used for polynomials on Koopman's page matches the "Koopman" field further up on this page.
+    Koopman also provides a tool to compute this data.
+  </p>
 </div>
 
 </div></div>
@@ -208,6 +210,10 @@
   
   <p>
     This code implements an optimized variant of what was described in the section on shift registers.
+  </p>
+
+  <p>
+    <a href="http://www.ross.net/crc/download/crc_v3.txt">Ross N. Williams guide</a> provides a solid introduction to this idea.
   </p>
 
   <p>
