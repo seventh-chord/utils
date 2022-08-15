@@ -24,6 +24,10 @@
       padding: 4px;
       background: #ddf;
       border-radius: 4px;
+
+      /* This prevents the .code blocks from changing size when I change whether they contain <sup>-stuff at runtime */
+      display: inline-block;
+      height: 2.6ex;
     }
 
     .note {
@@ -51,6 +55,10 @@
     }
     #table_common_polynomials td {
       padding: 10px;
+    }
+
+    #table_common_polynomials tr:hover .code {
+      background: #bbf;
     }
   </style>
 </head>
@@ -99,7 +107,7 @@
     </tr>
   </table>
 
-  <p>This degree <span id="span_polynomial_degree" class="code"></span> polynomial will generate a <span id="span_crc_width" class="code"></span> bit CRC.</p>
+  <p>This degree <span id="span_polynomial_degree" class="code"></span> polynomial will generate a <span id="span_crc_width" class="code"></span> bit checksum.</p>
 
   <p>
     The MSB of the polynomial must be 1, otherwise the computation doesn't work.<br>
@@ -360,7 +368,7 @@
       }
 
       span_polynomial.innerHTML = poly_string;
-      span_polynomial_degree.innerText = g_polynomial.length;
+      span_polynomial_degree.innerText = g_polynomial.length - 1;
       span_crc_width.innerText = g_polynomial.length - 1;
     }
 
