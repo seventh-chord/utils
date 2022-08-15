@@ -131,12 +131,13 @@
 
   <table id="table_common_polynomials">
     <tr><td>Parity</td><td>1 bit</td><td><span class="code">0x1</span></td></tr>
-    <tr><td>CRC-15-CAN</td><td>15 bits</td><td><span class="code">0x4599</span></td><td class="note">CAN-Bus</td></tr>
-    <tr><td>CRC-16-CCITT</td><td>16 bits</td><td><span class="code">0x1021</span></td><td class="note">X.25, etc.</td></tr>
-    <tr><td>CRC-16-IBM</td><td>16 bits</td><td><span class="code">0x8005</span></td><td class="note">Modbus, etc.</td></tr>
-    <tr><td>CRC-17-CAN</td><td>17 bits</td><td><span class="code">0x1685b</span></td><td class="note">CAN FD, for messages &le; 16 bytes</td></tr>
-    <tr><td>CRC-17-CAN</td><td>21 bits</td><td><span class="code">0x102899</span></td><td class="note">CAN FD, for messages &gt; 16 bytes</td></tr>
-    <tr><td>CRC-32</td><td>32 bits</td><td><span class="code">0x04c11db7</span></td><td class="note">Ethernet, etc.</td></tr>
+    <tr><td>CAN-Bus</td><td>15 bits</td><td><span class="code">0x4599</span></td></tr>
+    <tr data-reverse data-start-one><td>Modbus</td><td>16 bits</td><td><span class="code">0x8005</span></td></tr>
+    <tr><td>CAN FD (messages &le; 16 bytes)</td><td>17 bits</td><td><span class="code">0x1685b</span></td></tr>
+    <tr><td>CAN FD (messages &gt; 16 bytes)</td><td>21 bits</td><td><span class="code">0x102899</span></td></tr>
+    <tr data-reverse data-start-one data-flip><td>CRC-32</td><td>32 bits</td><td><span class="code">0x04c11db7</span></td><td class="note">Ethernet, etc.</td></tr>
+    <tr data-reverse data-start-one data-flip><td>CRC-32C</td><td>32 bits</td><td><span class="code">0x1edc6f41</span></td><td class="note">Implemented in hardware on x64 processors</td></tr>
+    
   </table>
 </div>
 
@@ -184,7 +185,22 @@
 
 <div>
   <h2>Using special-purpose instructions</h2>
-  <b>TODO</b>
+  
+  <p>
+    On SSE4.2 processors (98.92% on the Steam hardware survey, July 2022), there is a <span class="code">crc32</span> instruction which implements the CRC-32C polynomial.
+    Variants of the instruction exist that can process 1, 2, 4 or 8 bytes in a single step.
+    With regards to the table generator, this instruction matches having the <i>Least-significant bit first</i> checkbox checked.
+    To match "normal" CRC-32C implementations, the CRC-register must be set to <span class="code">0xffffffff</span> initially, and bitflipped after processing all data.
+  </p>
+
+  <p>
+    On x64, there also are SIMD-algorithms for going faster than using table lookups.
+    For example, see "Fast CRC Computation for Generic Polynomials Using PCLMULQDQ Instruction" by V. Gopal, E. Ozturk, et al. (Intel).
+  </p>
+
+  <p>
+    On some STM32 Cortex-M processors, there is a CRC peripheral which allows for fast CRC computation without a lookup table.
+  </p>
 </div>
 
 <div>
@@ -502,6 +518,11 @@ compute_crc(uint8_t *bytes, int count)
     let hex = this.children[2].children[0].innerText;
     field_width.value = bits;
     field_normal.value = hex;
+
+    checkbox_table_reverse.checked = this.dataset.reverse != undefined;
+    checkbox_table_start_one.checked = this.dataset.startOne != undefined;
+    checkbox_table_flip.checked = this.dataset.flip != undefined;
+
     polynomial_update(field_normal);
   }
 
@@ -511,7 +532,7 @@ compute_crc(uint8_t *bytes, int count)
     row.onclick = common_polynomial_click;
   }
 
-  common_polynomials[common_polynomials.length - 1].onclick();
+  common_polynomials[common_polynomials.length - 2].onclick();
 
 </script>
 
