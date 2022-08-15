@@ -170,10 +170,6 @@
     The concept of most-significant bit doesn't really make sense when considering large chunks of data.
     Therefore, this property probably is more usefull in the other direction: If you want to analyze a given CRC-computation mathematically, you must define the first bit of the bitstream as the most significant bit.
   <p>
-  
-  <p>
-    Note that the most significant bit of the polynomial (the one corresponding to the highest power) is not used when xoring.
-  </p>
 </div>
 
 <div>
@@ -187,16 +183,6 @@
 <div id="right_column"><div>
 
 <div>
-  <h2>Implementation peculiarities</h2>
-  <b>TODO</b>
-
-  <ul>
-    <li>Initial register values (start with -1 is very common)</li>
-    <li>Final XOR</li>
-  </ul>
-</div>
-
-<div>
   <h2>Using special-purpose instructions</h2>
   <b>TODO</b>
 </div>
@@ -205,7 +191,7 @@
   <h2>Table-based computation</h2>
   
   <p>
-    This code implements an optimized variant of what was described in the section on shift registers above.
+    This code implements an optimized variant of what was described in the section on shift registers.
   </p>
 
   <p>
@@ -215,6 +201,19 @@
     However, some implementations will, within a given byte, start by feeding the least-significant bit into the shift register.
     Other implementations start by feeding the most-significant bit into the shift register.
     There is a checkbox to choose which variant you want to generate code for.
+  </p>
+
+  <p>
+    In all implementations I've encountered, the following is true, and the generated code matches this:
+    When, within a given byte, the bits are fed into the shift register most-significant first, the shift register can be drawn as in the section on shift registers, with the output having the bit that was about to be shifted out as the <b>most-significant</b> bit.
+    When, on the other hand, the bits are fed into the shift register least-significant first, the output has the bit that was about to be shifted out as the <b>least-significant</b> bit.
+    This essentially means that the values in the table might look bitwise reversed compared to what you would expect when the <i>Least-significant bit first</i>-checkbox is checked.
+  </p>
+
+  <p>
+    Some implementations start out the value of the shift register as all ones. This is provided for by the <i>Start with all one?</i>-checkbox.
+    Some implementations flip all the bits of the shift reigster at the end. This is provided for by the <i>Flip at end?</i>-checkbox.
+    In his guide, Williams has a section titled <i>Initial and Final Values</i> which gives some justification for this practice.
   </p>
 
   <label><input type="checkbox" id="checkbox_table_reverse" checked><i>Least-significant bit first.</i></label><br>
