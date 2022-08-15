@@ -5,11 +5,23 @@
 
   <style>
     h1 {
-      font-size: 24px;
+      font-size: 28px;
+      font-style: italic;
+      margin-bottom: 0px;
+      text-align: center;
     }
     h2 {
       padding-top: 20px;
       font-size: 20px;
+    }
+
+    #left_column, #right_column {
+      float: left;
+      width: 50%;
+    }
+
+    #left_column > div, #right_column > div {
+      margin: 30px;
     }
 
 
@@ -39,6 +51,9 @@
       text-align: right;
       width: 10em;
     }
+    input[type=checkbox] {
+      width: 1.7em;
+    }
 
     td {
       padding-top: 5px;
@@ -64,46 +79,40 @@
 </head>
 <body>
 <h1>Cyclic redundancy checks</h1>
+<div id="left_column"><div>
 
-<p><b>TODO</b> also learn about other common checksums, like Adler32 and fnv1-a</p>
-<p><b>TODO</b> write some notes about the properties of CRCs</p>
-<p><b>TODO</b> shift-register representation of CRCs?</p>
-<p><b>TODO</b> using special instructions to compute CRCs</p>
-<p><b>TODO</b> table-driven approach?</p>
-<p><b>TODO</b> final XOR step in some variants?</p>
-<p><b>TODO</b> do some variants start with ones instead of zeros?</p>
-<p><b>TODO</b> bit- and byte-order in commonly used implementations?</p>
-<p><b>TODO</b> watch <a href="https://betterembsw.blogspot.com/2013/11/crc-webinar.html">https://betterembsw.blogspot.com/2013/11/crc-webinar.html</a></p>
-<p><b>TODO</b> read <a href="http://www.ross.net/crc/download/crc_v3.txt">http://www.ross.net/crc/download/crc_v3.txt</a></p>
+<div>
+  <h2>Introduction</h2>
+
+  <p><b>TODO</b> also learn about other common checksums, like Adler32 and fnv1-a</p>
+  <p><b>TODO</b> write some notes about the properties of CRCs</p>
+</div>
 
 <div>
   <h2>Polynomial</h2>
   <table>
     <tr>
       <td>Normal</td>
-      <td><input id="field_normal_hex" type="text"></td>
-      <td><input id="field_normal_bin" type="text" value="11"></td>
-      <td><span class="note">MSB-first. The MSB (i.e. the leftmost) is omitted and implicitly 1.</span></td>
+      <td><input id="field_normal" type="text"></td>
+      <td><span class="note">If the bit with value 2<sup>n</sup> is set, the polynomial contains x<sup>n</sup>. x<sup>N</sup> is implicit.</span></td>
     </tr>
     <tr>
       <td>Reverse</td>
-      <td><input id="field_reverse_hex" type="text"></td>
-      <td><input id="field_reverse_bin" type="text"></td>
-      <td><span class="note">LSB-first. The MSB (i.e. the rightmost bit) is omitted and implicitly 1.</span></td>
+      <td><input id="field_reverse" type="text"></td>
+      <td><span class="note">If the bit with value 2<sup>n</sup> is set, the polynomial contains x<sup>N - n - 1</sup>. x<sup>N</sup> is implicit.</span></td>
     </tr>
     <tr>
-      <td>Reversed reciprocal</td>
-      <td><input id="field_reciprocal_hex" type="text"></td>
-      <td><input id="field_reciprocal_bin" type="text"></td>
-      <td><span class="note">MSB-first. The LSB (i.e. the rightmost bit) is omitted and implicitly 1.</span></td>
+      <td>Koopman</td>
+      <td><input id="field_reciprocal" type="text"></td>
+      <td><span class="note">If the bit with value 2<sup>n</sup> is set, the polynomial contains x<sup>n + 1</sup>. x<sup>0</sup> is implicit.</span></td>
     </tr>
     <tr>
-      <td>Width</td>
+      <td>Width (N)</td>
       <td><input id="field_width" type="number" value=3></td>
     </tr>
     <tr>
       <td>Polynomial</td>
-      <td colspan=3><span id="span_polynomial" class="code"></span></td>
+      <td colspan=2><span id="span_polynomial" class="code"></span></td>
     </tr>
   </table>
 
@@ -113,8 +122,6 @@
     The MSB of the polynomial must be 1, otherwise the computation doesn't work.<br>
     Trailing (LSB) zeros in the polynomial lead to an equal number of trailing unused bits in the CRC.
   </p>
-
-  <p>The polynomial form is usefull since it is consistent, even if different formats for converting the polynomial to a number.</p>
 </div>
 
 <div>
@@ -125,31 +132,98 @@
   <table id="table_common_polynomials">
     <tr><td>Parity</td><td>1 bit</td><td><span class="code">0x1</span></td></tr>
     <tr><td>CRC-15-CAN</td><td>15 bits</td><td><span class="code">0x4599</span></td><td class="note">CAN-Bus</td></tr>
+    <tr><td>CRC-16-CCITT</td><td>16 bits</td><td><span class="code">0x1021</span></td><td class="note">X.25, etc.</td></tr>
     <tr><td>CRC-16-IBM</td><td>16 bits</td><td><span class="code">0x8005</span></td><td class="note">Modbus, etc.</td></tr>
     <tr><td>CRC-17-CAN</td><td>17 bits</td><td><span class="code">0x1685b</span></td><td class="note">CAN FD, for messages &le; 16 bytes</td></tr>
     <tr><td>CRC-17-CAN</td><td>21 bits</td><td><span class="code">0x102899</span></td><td class="note">CAN FD, for messages &gt; 16 bytes</td></tr>
     <tr><td>CRC-32</td><td>32 bits</td><td><span class="code">0x04c11db7</span></td><td class="note">Ethernet, etc.</td></tr>
   </table>
+</div>
+
+<div>
+  <h2>Shift register</h2>
+  
+  <p>
+    I hope that this will help me remember how CRC computations work in the future.
+    This represents how one would implement a CRC with a shift register.
+  </p>
+  <p>
+    Keep in mind: CRCs operate within an arithmetic where plus and minus both are replaced by xor.
+    The system shown in the diagram computes the remainder of an input bitstream divided, using this xor-arithmetic, by the polynomial.
+  </p>
+
+  <img src="crc/crc_shift_register_export.svg" style="width: 25%; margin-left: 25%;">
+
+  <ol type="a">
+    <li>All bits in the shift register get shifted one step to the left. A zero gets shifted into the leftmost position.</li>
+    <li>A new bit from the input bitstream gets xor-ed with the rightmost bit which got shifted out of the shift register.</li>
+    <li>If the result of the xor in the previous step was 1, the shift register gets xor-ed with the polynomial register.</li>
+  </ol>
 
   <p>
-    <a href="http://users.ece.cmu.edu/~koopman/crc/index.html">Philip Koopman's page</a> provides tables of the "best" polynomials.
-    His page also has links to other good references.
+    The final contents of the shift register are used as the checksum.
+    In all implementations I have seen the leftmost bit in the shift reigster is the most significant bit of the checksum.
+  </p>
+
+  <p>
+    If the shift register definition given here is to match the division-definition of a CRC, the bitstream should start with the most significant bit.
+    The concept of most-significant bit doesn't really make sense when considering large chunks of data.
+    Therefore, this property probably is more usefull in the other direction: If you want to analyze a given CRC-computation mathematically, you must define the first bit of the bitstream as the most significant bit.
+  <p>
+  
+  <p>
+    Note that the most significant bit of the polynomial (the one corresponding to the highest power) is not used when xoring.
   </p>
 </div>
 
 <div>
-  <h2>Division method</h2>
+  <h2>Resources</h2>
 
-  <table>
-    <tr>
-      <td>Data bits</td>
-      <td><input id="division_field" type="text" value="11010011101100"></td>
-    </tr>
-  </table>
-
-  <pre id="division_output">
-  </pre>
+  <p>Philip Koopman's list of best polynomials: <a href="http://users.ece.cmu.edu/~koopman/crc/index.html">http://users.ece.cmu.edu/~koopman/crc/index.html</a></p>
+  <p>Ross N. Williams guide: <a href="http://www.ross.net/crc/download/crc_v3.txt">http://www.ross.net/crc/download/crc_v3.txt</a></p>
 </div>
+
+</div></div>
+<div id="right_column"><div>
+
+<div>
+  <h2>Implementation peculiarities</h2>
+  <b>TODO</b>
+
+  <ul>
+    <li>Initial register values (start with -1 is very common)</li>
+    <li>Final XOR</li>
+  </ul>
+</div>
+
+<div>
+  <h2>Using special-purpose instructions</h2>
+  <b>TODO</b>
+</div>
+
+<div>
+  <h2>Table-based computation</h2>
+  
+  <p>
+    This code implements an optimized variant of what was described in the section on shift registers above.
+  </p>
+
+  <p>
+    <i>In what order are bits put into the shift register?</i><br>
+    My understanding is that, since the properties of CRCs are defined in terms of errors on sequentially transmitted bit streams, it also is important that bits are put into the shift register in the order they are transmitted.
+    In all implementations I've seen, data is put into the registers <b>starting with the byte at the lowest address</b>, which matches how most data-transmission functions in OSes work.
+    However, some implementations will, within a given byte, start by feeding the least-significant bit into the shift register.
+    Other implementations start by feeding the most-significant bit into the shift register.
+    There is a checkbox to choose which variant you want to generate code for.
+  </p>
+
+  <label><input type="checkbox" id="checkbox_table_reverse" checked><i>Least-significant bit first.</i></label><br>
+  <label><input type="checkbox" id="checkbox_table_start_one" checked><i>Start with all one?</i></label><br>
+  <label><input type="checkbox" id="checkbox_table_flip" checked><i>Flip at end?</i></label>
+  <pre id="table_code"></pre>
+</div>
+
+</div></div>
 
 <script>
   const CHAR_SPACE = " ".charCodeAt(0);
@@ -158,38 +232,7 @@
   const CHAR_LOWERCASE_A = "a".charCodeAt(0);
   const CHAR_UPPERCASE_A = "A".charCodeAt(0);
 
-  function parse_bin(string) {
-    string = string.trim();
-    let bits = [];
-    for (let i = 0; i < string.length; ++i) {
-      let c = string.charCodeAt(i);
-      if (c == CHAR_SPACE) {
-        // Ok
-      } else if (c == CHAR_ZERO) {
-        bits.push(0);
-      } else if (c == CHAR_ONE) {
-        bits.push(1);
-      } else {
-        bits = null;
-        break;
-      }
-    }
-    if (bits && bits.length == 0) {
-      bits = null;
-    }
-    return bits;
-  }
-
-  function bits_to_bin_string(bits) {
-    let string = "";
-    for (let i = bits.length - 1; i >= 0; --i) {
-      let bit = bits[bits.length - i - 1];
-      string += bit? "1" : "0";
-    }
-    return string;
-  }
-
-  function parse_hex(string) {
+  function hex_string_to_bits(string) {
     string = string.trim();
 
     if (string.slice(0, 2) == "0x") {
@@ -244,42 +287,32 @@
 
 
 
-  let field_normal_bin = document.getElementById("field_normal_bin");
-  let field_normal_hex = document.getElementById("field_normal_hex");
-  let field_reverse_bin = document.getElementById("field_reverse_bin");
-  let field_reverse_hex = document.getElementById("field_reverse_hex");
-  let field_reciprocal_bin = document.getElementById("field_reciprocal_bin");
-  let field_reciprocal_hex = document.getElementById("field_reciprocal_hex");
+  let field_normal = document.getElementById("field_normal");
+  let field_reverse = document.getElementById("field_reverse");
+  let field_reciprocal = document.getElementById("field_reciprocal");
   let field_width = document.getElementById("field_width");
   let span_polynomial = document.getElementById("span_polynomial");
   let span_polynomial_degree = document.getElementById("span_polynomial_degree");
   let span_crc_width = document.getElementById("span_crc_width");
-
-  let division_field = document.getElementById("division_field");
-  let division_output = document.getElementById("division_output");
-
+  let checkbox_table_reverse = document.getElementById("checkbox_table_reverse");
+  let checkbox_table_start_one = document.getElementById("checkbox_table_start_one");
+  let checkbox_table_flip = document.getElementById("checkbox_table_flip");
+  let pre_table_code = document.getElementById("table_code");
 
   let g_polynomial = null;
 
   function polynomial_update(field) {
-    field_normal_bin.classList.remove("bad");
-    field_normal_hex.classList.remove("bad");
-    field_reverse_bin.classList.remove("bad");
-    field_reverse_hex.classList.remove("bad");
-    field_reciprocal_bin.classList.remove("bad");
-    field_reciprocal_hex.classList.remove("bad");
+    field_normal.classList.remove("bad");
+    field_reverse.classList.remove("bad");
+    field_reciprocal.classList.remove("bad");
     field_width.classList.remove("bad");
 
     // Normal variants, prepend MSB 1
-    if (field == field_normal_bin) {
-      g_polynomial = parse_bin(field_normal_bin.value);
+    if (field == field_normal || field == field_width) {
+      g_polynomial = hex_string_to_bits(field_normal.value);
       if (!g_polynomial) field.classList.add("bad");
     }
-    if (field == field_normal_hex || field == field_width) {
-      g_polynomial = parse_hex(field_normal_hex.value);
-      if (!g_polynomial) field.classList.add("bad");
-    }
-    if (g_polynomial && (field == field_normal_hex || field == field_normal_bin || field == field_width)) {
+    if (g_polynomial && (field == field_normal || field == field_width)) {
       while (g_polynomial && g_polynomial.length > 1 && g_polynomial[0] == 0) {
         g_polynomial = g_polynomial.slice(1);
       }
@@ -292,37 +325,28 @@
         g_polynomial = prefix.concat(g_polynomial);
       } else {
         g_polynomial = null;
-        field_normal_bin.classList.add("bad");
-        field_normal_hex.classList.add("bad");
+        field_normal.classList.add("bad");
         field_width.classList.add("bad");
       }
     }
 
     // Reverse variants
-    if (field == field_reverse_bin) {
-      g_polynomial = parse_bin(field_reverse_bin.value);
-      if (!g_polynomial) field_reverse_bin.classList.add("bad");
+    if (field == field_reverse) {
+      g_polynomial = hex_string_to_bits(field_reverse.value);
+      if (!g_polynomial) field_reverse.classList.add("bad");
     }
-    if (field == field_reverse_hex) {
-      g_polynomial = parse_hex(field_reverse_hex.value);
-      if (!g_polynomial) field_reverse_hex.classList.add("bad");
-    }
-    if (g_polynomial && (field == field_reverse_bin || field == field_reverse_hex)) {
+    if (g_polynomial && field == field_reverse) {
       field_width.value = g_polynomial.length;
       g_polynomial = g_polynomial.concat([1]);
       g_polynomial.reverse();
     }
 
     // Reciprocal variants
-    if (field == field_reciprocal_bin) {
-      g_polynomial = parse_bin(field_reciprocal_bin.value);
-      if (!g_polynomial) field_reciprocal_bin.classList.add("bad");
+    if (field == field_reciprocal) {
+      g_polynomial = hex_string_to_bits(field_reciprocal.value);
+      if (!g_polynomial) field_reciprocal.classList.add("bad");
     }
-    if (field == field_reciprocal_hex) {
-      g_polynomial = parse_hex(field_reciprocal_hex.value);
-      if (!g_polynomial) field_reciprocal_hex.classList.add("bad");
-    }
-    if (g_polynomial && (field == field_reciprocal_bin || field == field_reciprocal_hex)) {
+    if (g_polynomial && field == field_reciprocal) {
       while (g_polynomial.length > 1 && g_polynomial[0] == 0) {
         g_polynomial = g_polynomial.slice(1);
       }
@@ -332,23 +356,14 @@
 
     // Update other fields
     if (g_polynomial) {
-      if (field != field_normal_bin) {
-        field_normal_bin.value = bits_to_bin_string(g_polynomial.slice(1));
+      if (field != field_normal) {
+        field_normal.value = bits_to_hex_string(g_polynomial.slice(1));
       }
-      if (field != field_normal_hex) {
-        field_normal_hex.value = bits_to_hex_string(g_polynomial.slice(1));
+      if (field != field_reverse) {
+        field_reverse.value = bits_to_hex_string(Array.from(g_polynomial.slice(1)).reverse());
       }
-      if (field != field_reverse_bin) {
-        field_reverse_bin.value = bits_to_bin_string(Array.from(g_polynomial.slice(1)).reverse());
-      }
-      if (field != field_reverse_hex) {
-        field_reverse_hex.value = bits_to_hex_string(Array.from(g_polynomial.slice(1)).reverse());
-      }
-      if (field != field_reciprocal_bin) {
-        field_reciprocal_bin.value = bits_to_bin_string(g_polynomial.slice(0, g_polynomial.length - 1));
-      }
-      if (field != field_reciprocal_hex) {
-        field_reciprocal_hex.value = bits_to_hex_string(g_polynomial.slice(0, g_polynomial.length - 1));
+      if (field != field_reciprocal) {
+        field_reciprocal.value = bits_to_hex_string(g_polynomial.slice(0, g_polynomial.length - 1));
       }
 
       let poly_string = "";
@@ -372,81 +387,123 @@
       span_crc_width.innerText = g_polynomial.length - 1;
     }
 
-    division_field_update();
+
+    // Update table driven example code
+    // I made extensive use of a piece of paper when writing the code. Unfortunately, I don't understand the computation
+    // well enough to write informative comments. So I guess this code just sort of will have to be a bit of a mess :/
+    if (g_polynomial) {
+      let table_code = "// TODO implement this for other widths?";
+      
+      let width = g_polynomial.length - 1;
+      let reverse = checkbox_table_reverse.checked;
+
+      if (width == 32 || width == 16 || width == 8) {
+        let mask = (1 << width) - 1;
+
+        let poly = 0;
+        for (let i = 0; i < width; ++i) {
+          poly <<= 1;
+          if (reverse) {
+            if (g_polynomial[width - i]) poly |= 1;
+          } else {
+            if (g_polynomial[i + 1]) poly |= 1;
+          }
+        }
+
+        
+        let type = "uint" + width + "_t";
+
+        let initial = "0";
+        if (checkbox_table_start_one.checked) {
+          initial = "0x" + "f".repeat(width / 4);
+        }
+
+        let flip_code = "";
+        if (checkbox_table_flip.checked) {
+          flip_code = "~";
+        }
+
+        table_code = `static ${type} CRC_TABLE[256] = {
+`;
+
+        for (let byte = 0; byte <= 255; ++byte) {
+          if ((byte & 7) == 0) table_code += "  ";
+
+          let value = 0;
+
+          if (reverse) {
+            let xored_byte = byte;
+            for (let i = 0; i <= 7; ++i) {
+              if (xored_byte & (1 << i)) {
+                value = ((poly >>> (7 - i)) ^ value) >>> 0;
+                xored_byte = xored_byte ^ (poly << (i + 1));
+              }
+            }
+          } else {
+            let xored_byte = byte;
+            for (let i = 7; i >= 0; --i) {
+              if (xored_byte & (1 << i)) {
+                // Use an unsigned right shift to make javascript think this is a unsigned number. Nice.
+                value = (((poly << i) >>> 0) ^ value) >>> 0;
+                if (mask > 0) value &= mask;
+                xored_byte = xored_byte ^ (poly >>> (width - i));
+              }
+            }
+          }
+
+          let s = value.toString(16);
+          s = "0".repeat(width/4 - s.length) + s;
+          table_code += "0x" + s + ", ";
+
+          if ((byte & 7) == 7) table_code += "\n";
+        }
+
+        table_code += `};
+
+static ${type}
+compute_crc(uint8_t *bytes, int count)
+{
+  ${type} crc = ${initial};
+  while (count--) {`;
+
+        if (reverse) {
+          table_code += `
+    uint8_t bottom = crc;
+    uint8_t byte = *bytes++;
+    crc = (crc >> 8) ^ CRC_TABLE[bottom ^ byte];`;
+        } else {
+          table_code += `
+    uint8_t top = crc >> ${width - 8};
+    uint8_t byte = *bytes++;
+    crc = (crc << 8) ^ CRC_TABLE[top ^ byte];`;
+        }
+
+        table_code += `
   }
-
-  function division_field_update() {
-    division_field.classList.remove("bad");
-
-    let data_bits = parse_bin(division_field.value);
-    if (!data_bits) {
-      division_field.classList.add("bad");
-    } else if (!g_polynomial) {
-      // Sadge
-    } else {
-      let data_len = data_bits.length;
-      let crc_len = g_polynomial.length - 1;
-      data_bits = data_bits.concat(Array(crc_len).fill(0));
-
-      let string = "";
-
-      while (string.length < 10000) {
-        let polynomial_offset = 0;
-        while (polynomial_offset < data_len && data_bits[polynomial_offset] == 0) {
-          ++polynomial_offset;
-        }
-
-        if (string.length == 0) string += "  ";
-        else                    string += "= ";
-
-        let data_string = bits_to_bin_string(data_bits);
-        string += data_string.slice(0, data_len) + " " + data_string.slice(data_len);
-        string += "\n";
-
-        if (polynomial_offset >= data_len) {
-          break;
-        }
-
-        string += "^ ";
-
-        let polynomial_string = "";
-        for (let i = 0; i < polynomial_offset; ++i) polynomial_string += " ";
-        polynomial_string += bits_to_bin_string(g_polynomial, false);
-        string += polynomial_string.slice(0, data_len) + " " + polynomial_string.slice(data_len);
-        string += "\n";
-
-        for (let i = 0; i < g_polynomial.length; ++i) {
-          data_bits[polynomial_offset + i] ^= g_polynomial[i];
-        }
+  return ${flip_code}crc;
+}`;
       }
 
-      string += "\n";
-      let crc = data_bits.slice(data_len);
-      string += "CRC is " + bits_to_bin_string(crc) + " or " + bits_to_hex_string(crc);
-
-      division_output.innerText = string;
+      pre_table_code.innerText = table_code;
     }
   }
 
 
-  field_normal_bin.oninput = function() { polynomial_update(field_normal_bin); };
-  field_normal_hex.oninput = function() { polynomial_update(field_normal_hex); };
-  field_reverse_bin.oninput = function() { polynomial_update(field_reverse_bin); };
-  field_reverse_hex.oninput = function() { polynomial_update(field_reverse_hex); };
-  field_reciprocal_bin.oninput = function() { polynomial_update(field_reciprocal_bin); };
-  field_reciprocal_hex.oninput = function() { polynomial_update(field_reciprocal_hex); };
+  field_normal.oninput = function() { polynomial_update(field_normal); };
+  field_reverse.oninput = function() { polynomial_update(field_reverse); };
+  field_reciprocal.oninput = function() { polynomial_update(field_reciprocal); };
   field_width.oninput = function() { polynomial_update(field_width); };
-  field_normal_bin.oninput();
-
-  division_field.oninput = division_field_update;
-
+  
+  checkbox_table_reverse.oninput = function() { polynomial_update(null); };
+  checkbox_table_start_one.oninput = function() { polynomial_update(null); };
+  checkbox_table_flip.oninput = function() { polynomial_update(null); };
 
   function common_polynomial_click() {
     let bits = parseInt(this.children[1].innerText.split(" ")[0]);
     let hex = this.children[2].children[0].innerText;
     field_width.value = bits;
-    field_normal_hex.value = hex;
-    polynomial_update(field_normal_hex);
+    field_normal.value = hex;
+    polynomial_update(field_normal);
   }
 
   let common_polynomials = document.getElementById("table_common_polynomials").children[0].children;
@@ -454,6 +511,8 @@
     let row = common_polynomials[i];
     row.onclick = common_polynomial_click;
   }
+
+  common_polynomials[common_polynomials.length - 1].onclick();
 
 </script>
 
