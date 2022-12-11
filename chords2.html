@@ -34,15 +34,12 @@
     height: 30px;
     text-align: center;
   }
-  #pickers #scales td {
-    width: 80px;
-  }
   
   #pickers td:not(.selected):hover {
-    background: #efe;
+    background: #eef;
   }
   #pickers .selected {
-    background: #bfb;
+    background: #bbf;
   }
   
   
@@ -59,13 +56,9 @@
   #keyboards .label {
     position: absolute;
     right: 100%;
-    width: 100%;
-    bottom: 50%;
-    margin-right: 10px;
-    text-align: right;
-    font-size: 110%;
-
-    font-weight: bold;
+    width: 120px;
+    bottom: 40%;
+    text-align: center;
   }
 
   #keyboards .black,
@@ -75,37 +68,32 @@
     font-size: 90%;
   }
   #keyboards .black {
-    background: #666;
-    color: #fff;
+    background: #444;
+    color: #eee;
   }
   #keyboards .white {
     border: 1px solid black;
-  }
-  
-  #keyboards .mark1 {
-    font-weight: bold;
-  }
-  #keyboards .mark3 {
-    font-style: italic;
-  }
-  #keyboards .white.mark1,
-  #keyboards .white.mark2 {
-    background: #fdf;
-  }
-  #keyboards .black.mark1,
-  #keyboards .black.mark2 {
-    background: #747;
-    color: #fdf;
-  }
+    color: #222;
+  }  
   
   #keyboards .black span,
   #keyboards .white span {
     position: absolute;
-    bottom: 4px;
-    width: 100%;
     text-align: center;
+    bottom: 0;
+    width: 100%;
+    line-height: 25px;
   }
-    
+  
+  #keyboards .chord span {
+    background: #ec5;
+    color: #000;
+  }
+  #keyboards .root span {
+    background: #d66;
+    font-weight: bold;
+  }
+ 
   </style>
 </head>
 <body>
@@ -114,35 +102,46 @@
   <div id="keys">
     <h3>Key:</h3>
     <table>
+      <!-- Sometimes you'll see the circle of fifths with C# and Cb, but I haven't implemented
+           that, because then you start to see things like E being Fb or F being E#, which I
+           didn't want to figure out how to handle in code. That being said, I assume there is
+           some bespoke elegant way of writing the code so it handles all root notes properly. -->
+      <!-- Actually, the code isn't even correct currently. For example, Gb, B should be called Cb -->
+      
       <tr>
-        <td rowspan=2 class="selected" data-semitones="0">C</td>
-        <td data-semitones="1">C#</td>
-        <td rowspan=2 data-semitones="2">D</td>
-        <td data-semitones="3">D#</td>
-        <td rowspan=2 data-semitones="4">E</td>
-        <td rowspan=2 data-semitones="5">F</td>
-        <td data-semitones="6">F#</td>
-        <td rowspan=2 data-semitones="7">G</td>
-        <td data-semitones="8">G#</td>
-        <td rowspan=2 data-semitones="9">A</td>
-        <td data-semitones="10">A#</td>
-        <td rowspan=2 data-semitones="11">B</td>
+        <td rowspan=2 class="selected" data-semitones="0" data-accidentals="0">C</td>
+        <td rowspan=2 class="selected" data-semitones="7" data-accidentals="1">G</td>
+        <td rowspan=2 class="selected" data-semitones="2" data-accidentals="2">D</td>
+        <td rowspan=2 class="selected" data-semitones="9" data-accidentals="3">A</td>
+        <td rowspan=2 class="selected" data-semitones="4" data-accidentals="4">E</td>
+        <td rowspan=2 class="selected" data-semitones="11" data-accidentals="5">B</td>
+        <td rowspan=1 class="selected" data-semitones="6" data-accidentals="-6">G&flat;</td>
+        <td rowspan=2 class="selected" data-semitones="1" data-accidentals="-5">D&flat;</td>
+        <td rowspan=2 class="selected" data-semitones="8" data-accidentals="-4">A&flat;</td>
+        <td rowspan=2 class="selected" data-semitones="3" data-accidentals="-3">E&flat;</td>
+        <td rowspan=2 class="selected" data-semitones="10" data-accidentals="-2">B&flat;</td>
+        <td rowspan=2 class="selected" data-semitones="5" data-accidentals="-1">F</td>
       </tr>
       <tr>
-        <td data-semitones="1">Db</td>
-        <td data-semitones="3">Eb</td>
-        <td data-semitones="6">Gb</td>
-        <td data-semitones="8">Ab</td>
-        <td data-semitones="10">Bb</td>
+        <td rowspan=1 class="selected" data-semitones="6" data-accidentals="6">F&sharp;</td>
       </tr>
-    </table>
-  </div>
-  
-  <div id="scales">
-    <h3>Scale:</h3>
-    <table>
-      <tr><td class="selected" data-scale="major">Major</td></tr>
-      <tr><td data-scale="minor">Minor</td></tr>
+      <tr>
+        <td rowspan=2 class="selected" data-semitones="9" data-accidentals="0">a</td>
+        <td rowspan=2 class="selected" data-semitones="4" data-accidentals="1">e</td>
+        <td rowspan=2 class="selected" data-semitones="11" data-accidentals="2">b</td>
+        <td rowspan=2 class="selected" data-semitones="6" data-accidentals="3">f&sharp;</td>
+        <td rowspan=2 class="selected" data-semitones="1" data-accidentals="4">c&sharp;</td>
+        <td rowspan=2 class="selected" data-semitones="8" data-accidentals="5">g&sharp;</td>
+        <td rowspan=1 class="selected" data-semitones="3" data-accidentals="-6">e&flat;</td>
+        <td rowspan=2 class="selected" data-semitones="10" data-accidentals="-5">b&flat;</td>
+        <td rowspan=2 class="selected" data-semitones="5" data-accidentals="-4">f</td>
+        <td rowspan=2 class="selected" data-semitones="0" data-accidentals="-3">c</td>
+        <td rowspan=2 class="selected" data-semitones="7" data-accidentals="-2">g</td>
+        <td rowspan=2 class="selected" data-semitones="2" data-accidentals="-1">d</td>
+      </tr>
+      <tr>
+        <td rowspan=1 class="selected" data-semitones="3" data-accidentals="6">d&sharp;</td>
+      </tr>
     </table>
   </div>
 </div>
@@ -153,53 +152,30 @@
 
 <script>
 
-  let chosen_key = 0;
+  let chosen_root_semitone = 0;
+  let chosen_key_accidentals = 0;
   let chosen_scale = "";
-
-  let key_tds = Array.from(document.getElementById("keys").getElementsByTagName("td"));
-  function key_onclick() {
-    for (let other_key of key_tds) other_key.classList.remove("selected");
-    this.classList.add("selected");
-    chosen_key = parseInt(this.dataset.semitones);
-    update();
-  }
-  for (let key of key_tds) {
-    key.onclick = key_onclick;
-    if (key.classList.contains("selected")) chosen_key = parseInt(key.dataset.semitones);
-  }
-  
-  let scale_tds = Array.from(document.getElementById("scales").getElementsByTagName("td"));
-  function scale_onclick() {
-    for (let other_scale of scale_tds) other_scale.classList.remove("selected");
-    this.classList.add("selected");
-    chosen_scale = this.dataset.scale;
-    update();
-  }
-  for (let scale of scale_tds) {
-    scale.onclick = scale_onclick;
-    if (scale.classList.contains("selected")) chosen_scale = scale.dataset.scale;
-  }
   
   
   let KEYBOARD_KEYS = [
     // White keys
-    { offset: 0, semitone:  0, black: false },
-    { offset: 1, semitone:  2, black: false },
-    { offset: 2, semitone:  4, black: false },
-    { offset: 3, semitone:  5, black: false },
-    { offset: 4, semitone:  7, black: false },
-    { offset: 5, semitone:  9, black: false },
-    { offset: 6, semitone: 11, black: false },
+    { offset: 0, semitones: 0,  names: "C", black: false },
+    { offset: 1, semitones: 2,  names: "D", black: false },
+    { offset: 2, semitones: 4,  names: "E", black: false },
+    { offset: 3, semitones: 5,  names: "F", black: false },
+    { offset: 4, semitones: 7,  names: "G", black: false },
+    { offset: 5, semitones: 9,  names: "A", black: false },
+    { offset: 6, semitones: 11, names: "B", black: false },
 
     // Black keys
-    { offset: 0, semitone:  1, black: true },
-    { offset: 1, semitone:  3, black: true },
-    { offset: 3, semitone:  6, black: true },
-    { offset: 4, semitone:  8, black: true },
-    { offset: 5, semitone: 10, black: true },
+    { offset: 0, semitones: 1,  names: "C&sharp; D&flat;", black: true },
+    { offset: 1, semitones: 3,  names: "D&sharp; E&flat;", black: true },
+    { offset: 3, semitones: 6,  names: "F&sharp; G&flat;", black: true },
+    { offset: 4, semitones: 8,  names: "G&sharp; A&flat;", black: true },
+    { offset: 5, semitones: 10, names: "A&sharp; B&flat;", black: true },
   ];
 
-  let OCTAVES = 3;
+  let OCTAVES = 2;
   let WHITE_KEYS_IN_OCTAVE = 7;
   
   let INTERVALS = {
@@ -216,42 +192,42 @@
     "M7": 11,
   };
   
-  let NOTES = [
-    "C",
-    [],
-    "D",
-    [],
-    "E",
-    "F",
-    [],
-    "G",
-    [],
-    "A",
-    [],
-    "B",
-  ];
-  
+  let NOTES_MAJOR = [ 0, 2, 4, 5, 7, 9, 11 ];
   let CHORDS_MAJOR = [
-    { suffix: " major scale",     root: 0, intervals: "P1 M2 M3 P4 P5 M6 M7" },
-    { suffix: " (I)",             root: 0, intervals: "P1 M3 P5 +M7" },
-    { suffix: "m (ii)",           root: 2, intervals: "P1 m3 P5 +m7" },
-    { suffix: "m (iii)",          root: 4, intervals: "P1 m3 P5 +m7" },
-    { suffix: " (IV)",            root: 5, intervals: "P1 M3 P5 +M7" },
-    { suffix: " (V)",             root: 7, intervals: "P1 M3 P5 +m7" },
-    { suffix: "m (vi)",           root: 9, intervals: "P1 m3 P5 +m7" },
-    { suffix: "&deg; (vii&deg;)", root: 11, intervals: "P1 m3 d5 +m7" },
+    { suffix: " (I)",             root: 0, intervals: "P1 M3 P5" },
+    { suffix: "m (ii)",           root: 2, intervals: "P1 m3 P5" },
+    { suffix: "m (iii)",          root: 4, intervals: "P1 m3 P5" },
+    { suffix: " (IV)",            root: 5, intervals: "P1 M3 P5" },
+    { suffix: " (V)",             root: 7, intervals: "P1 M3 P5" },
+    { suffix: "m (vi)",           root: 9, intervals: "P1 m3 P5" },
+    { suffix: "&deg; (vii&deg;)", root: 11, intervals: "P1 m3 d5" },
+  ];
+
+  let NOTES_MINOR = [ 0, 2, 3, 5, 7, 8, 10 ];
+  let CHORDS_MINOR = [
+    { suffix: "m (i)",            root: 0, intervals: "P1 m3 P5" },
+    { suffix: "&deg; (ii&deg;)",  root: 2, intervals: "P1 m3 d5" },
+    { suffix: " (bIII)",          root: 3, intervals: "P1 M3 P5" },
+    { suffix: "m (iv)",           root: 5, intervals: "P1 m3 P5" },
+    { suffix: "m (v)",            root: 7, intervals: "P1 m3 P5" },
+    { suffix: " (bVI)",           root: 8, intervals: "P1 M3 P5" },
+    { suffix: " (bVII)",          root: 10, intervals: "P1 M3 P5" },
   ];
   
-  let CHORDS_MINOR = [
-    { suffix: " minor scale",     root: 0, intervals: "P1 M2 m3 P4 P5 m6 m7" },
-    { suffix: "m (i)",            root: 0, intervals: "P1 m3 P5 +m7" },
-    { suffix: "&deg; (ii&deg;)",  root: 2, intervals: "P1 m3 d5 +m7" },
-    { suffix: " (bIII)",          root: 3, intervals: "P1 M3 P5 +M7" },
-    { suffix: "m (iv)",           root: 5, intervals: "P1 m3 P5 +m7" },
-    { suffix: "m (v)",            root: 7, intervals: "P1 m3 P5 +m7" },
-    { suffix: " (bVI)",           root: 8, intervals: "P1 M3 P5 +M7" },
-    { suffix: " (bVII)",          root: 10, intervals: "P1 M3 P5 +m7" },
-  ];
+  
+  
+  function pick_name(semitone, key_accidentals) {
+    semitone = semitone%12;
+    for (let key of KEYBOARD_KEYS) {
+      if (key.semitones == semitone) {
+        let names = key.names.split(" ");
+        if (chosen_key_accidentals > 0) for (let n of names) if (n.includes("sharp")) return n;
+        if (chosen_key_accidentals < 0) for (let n of names) if (n.includes("flat")) return n;
+        return names[0];
+      }
+    }
+    return "?";
+  }
   
 
   let white_width = 40;
@@ -268,31 +244,34 @@
       chosen_scale == "minor"? CHORDS_MINOR :
       [];
     
+    let notes =
+      chosen_scale == "major"? NOTES_MAJOR :
+      chosen_scale == "minor"? NOTES_MINOR :
+      [];
+    
     for (let chord of chords) {
-      let offsets = [];
+      let semitone_map = [];
+      for (let i = 0; i < 12; ++i) semitone_map[i] = {};
+      
+      for (let note_semitone_offset of notes) {
+        semitone_map[(chosen_root_semitone + note_semitone_offset)%12].show = true;
+      }
       for (let interval of chord.intervals.split(" ")) {
-        let offset = INTERVALS[interval.startsWith("+")? interval.slice(1) : interval];
-        offsets[(chosen_key + chord.root + offset)%12] = interval;
+        let semitone_offset = INTERVALS[interval];
+        semitone_map[(chosen_root_semitone + chord.root + semitone_offset)%12].chord = true;
       }
 
       html += "<div>";
       html += "<div style='width: " + (white_width*WHITE_KEYS_IN_OCTAVE*OCTAVES) + "px; height: " + white_height + "px;'>";
-      html += "<span class='label'>" + NOTES[(chosen_key + chord.root)%12] + chord.suffix + "</span>";
+      html += "<span class='label'>" + pick_name(chosen_root_semitone + chord.root, chosen_key_accidentals) + chord.suffix + "</span>";
 
       for (let octave = 0; octave < OCTAVES; ++octave) {
         for (let key of KEYBOARD_KEYS) {
-          let label = offsets[key.semitone] || "";
-          let mark_class = "";
-          if (label != "") {
-            mark_class = "mark2";
-            if (label == "P1") {
-              mark_class = "mark1";
-            } else if (label.startsWith("+")) {
-              mark_class = "mark3";
-              label = label.slice(1);
-            }
-          }
           
+          let mark_class = "";
+          if (key.semitones == (chosen_root_semitone + chord.root)%12) mark_class += " root";
+          if (semitone_map[key.semitones].chord) mark_class += " chord";
+
           if (key.black) {
             let x = (octave*WHITE_KEYS_IN_OCTAVE + key.offset + 1)*white_width - Math.ceil(black_width / 2);
             html += "<span class='black " + mark_class + "' style='left: " + x + "px; width: " + black_width + "px; height: " + black_height + "px'>";
@@ -301,8 +280,8 @@
             html += "<span class='white " + mark_class + "' style='left: " + x + "px; width: " + (white_width - 1) + "px; height: " + white_height + "px'>";
           }
           
-          if (label) {
-            html += "<span>" + label + "<br>" + label + "</span>";
+          if (semitone_map[key.semitones].show) {
+            html += "<span>" + pick_name(key.semitones, chosen_key_accidentals) + "</span>";
           }
           html += "</span>";
         }
@@ -312,7 +291,22 @@
     
     document.getElementById("keyboards").innerHTML = html;
   }
-  update();
+  
+  
+  let key_tds = Array.from(document.getElementById("keys").getElementsByTagName("td"));
+  function key_onclick() {
+    for (let other_key of key_tds) other_key.classList.remove("selected");
+    this.classList.add("selected");
+    
+    chosen_root_semitone = parseInt(this.dataset.semitones);
+    chosen_key_accidentals = this.dataset.accidentals;
+    chosen_scale = this.innerText[0] == this.innerText[0].toUpperCase()? "major" : "minor";
+    
+    update();
+  }
+  for (let key of key_tds) key.onclick = key_onclick;
+  
+  key_tds[0].onclick();
 
 </script>
 
