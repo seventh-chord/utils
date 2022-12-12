@@ -34,6 +34,11 @@
     height: 30px;
     text-align: center;
   }
+
+  #pickers .center {
+    font-weight: bold;
+    background: #ddd;
+  }
   
   #pickers td:not(.selected):hover {
     background: #eef;
@@ -102,46 +107,6 @@
   <div id="keys">
     <h3>Key:</h3>
     <table>
-      <!-- Sometimes you'll see the circle of fifths with C# and Cb, but I haven't implemented
-           that, because then you start to see things like E being Fb or F being E#, which I
-           didn't want to figure out how to handle in code. That being said, I assume there is
-           some bespoke elegant way of writing the code so it handles all root notes properly. -->
-      <!-- Actually, the code isn't even correct currently. For example, Gb, B should be called Cb -->
-      
-      <tr>
-        <td rowspan=2 class="selected" data-semitones="0" data-accidentals="0">C</td>
-        <td rowspan=2 class="selected" data-semitones="7" data-accidentals="1">G</td>
-        <td rowspan=2 class="selected" data-semitones="2" data-accidentals="2">D</td>
-        <td rowspan=2 class="selected" data-semitones="9" data-accidentals="3">A</td>
-        <td rowspan=2 class="selected" data-semitones="4" data-accidentals="4">E</td>
-        <td rowspan=2 class="selected" data-semitones="11" data-accidentals="5">B</td>
-        <td rowspan=1 class="selected" data-semitones="6" data-accidentals="-6">G&flat;</td>
-        <td rowspan=2 class="selected" data-semitones="1" data-accidentals="-5">D&flat;</td>
-        <td rowspan=2 class="selected" data-semitones="8" data-accidentals="-4">A&flat;</td>
-        <td rowspan=2 class="selected" data-semitones="3" data-accidentals="-3">E&flat;</td>
-        <td rowspan=2 class="selected" data-semitones="10" data-accidentals="-2">B&flat;</td>
-        <td rowspan=2 class="selected" data-semitones="5" data-accidentals="-1">F</td>
-      </tr>
-      <tr>
-        <td rowspan=1 class="selected" data-semitones="6" data-accidentals="6">F&sharp;</td>
-      </tr>
-      <tr>
-        <td rowspan=2 class="selected" data-semitones="9" data-accidentals="0">a</td>
-        <td rowspan=2 class="selected" data-semitones="4" data-accidentals="1">e</td>
-        <td rowspan=2 class="selected" data-semitones="11" data-accidentals="2">b</td>
-        <td rowspan=2 class="selected" data-semitones="6" data-accidentals="3">f&sharp;</td>
-        <td rowspan=2 class="selected" data-semitones="1" data-accidentals="4">c&sharp;</td>
-        <td rowspan=2 class="selected" data-semitones="8" data-accidentals="5">g&sharp;</td>
-        <td rowspan=1 class="selected" data-semitones="3" data-accidentals="-6">e&flat;</td>
-        <td rowspan=2 class="selected" data-semitones="10" data-accidentals="-5">b&flat;</td>
-        <td rowspan=2 class="selected" data-semitones="5" data-accidentals="-4">f</td>
-        <td rowspan=2 class="selected" data-semitones="0" data-accidentals="-3">c</td>
-        <td rowspan=2 class="selected" data-semitones="7" data-accidentals="-2">g</td>
-        <td rowspan=2 class="selected" data-semitones="2" data-accidentals="-1">d</td>
-      </tr>
-      <tr>
-        <td rowspan=1 class="selected" data-semitones="3" data-accidentals="6">d&sharp;</td>
-      </tr>
     </table>
   </div>
 </div>
@@ -149,30 +114,102 @@
 <div id="keyboards">
 </div>
 
-
 <script>
-
   let chosen_root_semitone = 0;
   let chosen_key_accidentals = 0;
   let chosen_scale = "";
+
+
+  let ROOT_NAMES = [ "C", null, "D", null, "E", "F", null, "G", null, "A", null, "B" ];
+  let SEMITONES = ROOT_NAMES.length;
+
+
+
+  // Construct picker based on circle of fifths
+  let html = "";
+
+  // Major scale
+  html += "<tr>";
+  for (let accidentals = -7; accidentals <= 7; ++accidentals) {
+    let semitone = (0 + SEMITONES*5 + 7*accidentals)%SEMITONES;
+
+    let name = ROOT_NAMES[semitone];
+    if (accidentals > 0 && ROOT_NAMES[(semitone + 11)%SEMITONES]) {
+      name = ROOT_NAMES[(semitone + 11)%SEMITONES] + "&sharp;";
+    } else if (accidentals < 0 && ROOT_NAMES[(semitone + 1)%SEMITONES]) {
+      name = ROOT_NAMES[(semitone + 1)%SEMITONES] + "&flat;";
+    }
+
+    html += "<td";
+    if (accidentals == 0) {
+      html += " class='selected center'";
+    }
+    html += " data-semitones='" + semitone + "' data-accidentals='" + accidentals + "'>" + name + "</td>";
+  }
+  html += "</tr>";
+
+  // Relative minor scale
+  html += "<tr>";
+  for (let accidentals = -7; accidentals <= 7; ++accidentals) {
+    let semitone = (9 + SEMITONES*5 + 7*accidentals)%SEMITONES;
+
+    let name = ROOT_NAMES[semitone];
+    if (accidentals > 0 && ROOT_NAMES[(semitone + 11)%SEMITONES]) {
+      name = ROOT_NAMES[(semitone + 11)%SEMITONES] + "&sharp;";
+    } else if (accidentals < 0 && ROOT_NAMES[(semitone + 1)%SEMITONES]) {
+      name = ROOT_NAMES[(semitone + 1)%SEMITONES] + "&flat;";
+    }
+
+    html += "<td";
+    if (accidentals == 0) {
+      html += " class='center'";
+    }
+    html += " data-semitones='" + semitone + "' data-accidentals='" + accidentals + "'>" + name.toLowerCase() + "</td>";
+  }
+  html += "</tr>";
+  
+  document.getElementById("pickers").getElementsByTagName("table")[0].innerHTML = html;
+
+  
+
+  // Returns an array with twelve entries (simmilar to ROOT_NAMES), but with only those entries
+  // used in a scale with the given number of accidentals set.
+  function note_names(accidentals) {
+    let names = [...ROOT_NAMES];
+    if (accidentals < 0) {
+      for (let i = 0; i > accidentals; --i) {
+        let semitone = (11 + (-i)*5)%SEMITONES;
+        names[(semitone + 11)%SEMITONES] = names[semitone] + "&flat;";
+        names[semitone] = null;
+      }
+    } else {
+      for (let i = 0; i < accidentals; ++i) {
+        let semitone = (5 + i*7)%SEMITONES;
+        names[(semitone + 1)%SEMITONES] = names[semitone] + "&sharp;";
+        names[semitone] = null;
+      }
+    }
+    return names;
+  }
+
   
   
   let KEYBOARD_KEYS = [
     // White keys
-    { offset: 0, semitones: 0,  names: "C", black: false },
-    { offset: 1, semitones: 2,  names: "D", black: false },
-    { offset: 2, semitones: 4,  names: "E", black: false },
-    { offset: 3, semitones: 5,  names: "F", black: false },
-    { offset: 4, semitones: 7,  names: "G", black: false },
-    { offset: 5, semitones: 9,  names: "A", black: false },
-    { offset: 6, semitones: 11, names: "B", black: false },
+    { offset: 0, semitones: 0,  black: false },
+    { offset: 1, semitones: 2,  black: false },
+    { offset: 2, semitones: 4,  black: false },
+    { offset: 3, semitones: 5,  black: false },
+    { offset: 4, semitones: 7,  black: false },
+    { offset: 5, semitones: 9,  black: false },
+    { offset: 6, semitones: 11, black: false },
 
     // Black keys
-    { offset: 0, semitones: 1,  names: "C&sharp; D&flat;", black: true },
-    { offset: 1, semitones: 3,  names: "D&sharp; E&flat;", black: true },
-    { offset: 3, semitones: 6,  names: "F&sharp; G&flat;", black: true },
-    { offset: 4, semitones: 8,  names: "G&sharp; A&flat;", black: true },
-    { offset: 5, semitones: 10, names: "A&sharp; B&flat;", black: true },
+    { offset: 0, semitones: 1,  black: true },
+    { offset: 1, semitones: 3,  black: true },
+    { offset: 3, semitones: 6,  black: true },
+    { offset: 4, semitones: 8,  black: true },
+    { offset: 5, semitones: 10, black: true },
   ];
 
   let OCTAVES = 2;
@@ -192,7 +229,6 @@
     "M7": 11,
   };
   
-  let NOTES_MAJOR = [ 0, 2, 4, 5, 7, 9, 11 ];
   let CHORDS_MAJOR = [
     { suffix: " (I)",             root: 0, intervals: "P1 M3 P5" },
     { suffix: "m (ii)",           root: 2, intervals: "P1 m3 P5" },
@@ -203,7 +239,6 @@
     { suffix: "&deg; (vii&deg;)", root: 11, intervals: "P1 m3 d5" },
   ];
 
-  let NOTES_MINOR = [ 0, 2, 3, 5, 7, 8, 10 ];
   let CHORDS_MINOR = [
     { suffix: "m (i)",            root: 0, intervals: "P1 m3 P5" },
     { suffix: "&deg; (ii&deg;)",  root: 2, intervals: "P1 m3 d5" },
@@ -214,20 +249,6 @@
     { suffix: " (bVII)",          root: 10, intervals: "P1 M3 P5" },
   ];
   
-  
-  
-  function pick_name(semitone, key_accidentals) {
-    semitone = semitone%12;
-    for (let key of KEYBOARD_KEYS) {
-      if (key.semitones == semitone) {
-        let names = key.names.split(" ");
-        if (chosen_key_accidentals > 0) for (let n of names) if (n.includes("sharp")) return n;
-        if (chosen_key_accidentals < 0) for (let n of names) if (n.includes("flat")) return n;
-        return names[0];
-      }
-    }
-    return "?";
-  }
   
 
   let white_width = 40;
@@ -244,33 +265,25 @@
       chosen_scale == "minor"? CHORDS_MINOR :
       [];
     
-    let notes =
-      chosen_scale == "major"? NOTES_MAJOR :
-      chosen_scale == "minor"? NOTES_MINOR :
-      [];
+    let names = note_names(chosen_key_accidentals);
     
     for (let chord of chords) {
-      let semitone_map = [];
-      for (let i = 0; i < 12; ++i) semitone_map[i] = {};
-      
-      for (let note_semitone_offset of notes) {
-        semitone_map[(chosen_root_semitone + note_semitone_offset)%12].show = true;
-      }
+      let chord_map = [];
+      for (let i = 0; i < 12; ++i) chord_map[i] = false;
       for (let interval of chord.intervals.split(" ")) {
-        let semitone_offset = INTERVALS[interval];
-        semitone_map[(chosen_root_semitone + chord.root + semitone_offset)%12].chord = true;
+        chord_map[(chosen_root_semitone + chord.root + INTERVALS[interval])%SEMITONES] = true;
       }
 
       html += "<div>";
       html += "<div style='width: " + (white_width*WHITE_KEYS_IN_OCTAVE*OCTAVES) + "px; height: " + white_height + "px;'>";
-      html += "<span class='label'>" + pick_name(chosen_root_semitone + chord.root, chosen_key_accidentals) + chord.suffix + "</span>";
+      html += "<span class='label'>" + names[(chosen_root_semitone + chord.root)%SEMITONES] + chord.suffix + "</span>";
 
       for (let octave = 0; octave < OCTAVES; ++octave) {
         for (let key of KEYBOARD_KEYS) {
           
           let mark_class = "";
-          if (key.semitones == (chosen_root_semitone + chord.root)%12) mark_class += " root";
-          if (semitone_map[key.semitones].chord) mark_class += " chord";
+          if (key.semitones == (chosen_root_semitone + chord.root)%SEMITONES) mark_class += " root";
+          if (chord_map[key.semitones]) mark_class += " chord";
 
           if (key.black) {
             let x = (octave*WHITE_KEYS_IN_OCTAVE + key.offset + 1)*white_width - Math.ceil(black_width / 2);
@@ -280,8 +293,8 @@
             html += "<span class='white " + mark_class + "' style='left: " + x + "px; width: " + (white_width - 1) + "px; height: " + white_height + "px'>";
           }
           
-          if (semitone_map[key.semitones].show) {
-            html += "<span>" + pick_name(key.semitones, chosen_key_accidentals) + "</span>";
+          if (names[key.semitones]) {
+            html += "<span>" + names[key.semitones] + "</span>";
           }
           html += "</span>";
         }
@@ -306,7 +319,7 @@
   }
   for (let key of key_tds) key.onclick = key_onclick;
   
-  key_tds[0].onclick();
+  document.getElementById("keys").getElementsByClassName("selected")[0].onclick();
 
 </script>
 
