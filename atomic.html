@@ -1,0 +1,315 @@
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Atomic operations</title>
+
+  <style>
+    h1 {
+      font-size: 28px;
+      font-style: italic;
+      margin-bottom: 0px;
+      text-align: center;
+    }
+    h2 {
+      padding-top: 20px;
+      font-size: 20px;
+    }
+    h3 {
+        font-size: 17px;
+        margin-top: 35px;
+        margin-bottom: 3px;
+        color: #202020;
+    }
+
+    p {
+        margin-top: 8px;
+        margin-bottom: 8px;
+    }
+
+    ul {
+        margin-top: 10px;
+        margin-bottom: 10px;
+    }
+    li {
+        margin-bottom: 5px;
+    }
+
+    table {
+        margin-top: 10px;
+        margin-bottom: 10px;
+        border-collapse: collapse;
+    }
+    td {
+        border: 1px solid;
+        text-align: center;
+        padding: 5px;
+    }
+
+    #left_column, #right_column {
+      float: left;
+      width: 50%;
+    }
+
+    #left_column > div, #right_column > div {
+      margin: 60px;
+    }
+
+    .ref::before {
+        content: "See: ";
+    }
+    .ref {
+        display: block;
+        color: #202020;
+        font-style: italic;
+        font-size: 90%;
+    }
+
+    .code {
+      font-style: normal;
+      font-family: monospace;
+      padding: 2px;
+      background: #ddd;
+      border-radius: 2px;
+
+      /* This prevents the .code blocks from changing size when I change whether they contain <sup>-stuff at runtime */
+      display: inline-block;
+      height: 2.6ex;
+    }
+
+    .note {
+      font-style: italic;
+      font-size: 90%;
+    }
+
+    .code-table {
+        margin-top: 5px;
+        margin-left: 40px;
+    }
+    .code-table td {
+        text-align: left;
+        border: none;
+    }
+    .code-table pre {
+        margin: 0px;
+        padding: 5px;
+        padding-right: 10px;
+        margin-right: 20px;
+        background: #ddd;
+        border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+<h1>Atomic operations cheatsheet</h1>
+<div id="left_column"><div>
+
+<h2>What does the processor do?</h2>
+
+<h3>Load/store reordering</h3>
+
+In very broad strokes:
+<ul>
+    <li>On ARM, loads and stores can be reordered arbitrarily.</li>
+    <li>On x64, the only allowed reordering is doing loads from later instructions before stores from earlier instructions complete.</li>
+</ul>
+
+Some examples:
+<ul>
+    <li>
+        <p>Loads can be reordred to run before preceding stores.
+        Both on x64 and ARM it is possible to get x=0 and y=0.</p>
+
+        <table class="code-table""><tr>
+            <td>
+                Thread 1
+<pre>
+*a = 1;
+int x = *b;
+</pre>
+            </td>
+            <td>
+                Thread 2
+<pre>
+*b = 1;
+int y = *a;
+</pre>
+            </td>
+        </tr></table>
+    </li>
+
+    <li>
+        <p>On x64, stores are not re-ordered with other stores, loads are not re-ordered with other loads.
+        Thread 2 sees either x=0, y=0 or x=1, y=1.</p>
+
+        <p>On ARM, it is possible to get x=1, y=0 or x=0, y=1. A <span class="code">DMB</span> barrier is
+        needed between the instruction pairs in <i>both</i> threads.</p>
+
+        <table class="code-table""><tr>
+            <td>
+                Thread 1
+<pre>
+*a = 1;
+*b = 1;
+</pre>
+            </td>
+            <td>
+                Thread 2
+<pre>
+int x = *b;
+int y = *a;
+</pre>
+            </td>
+        </tr></table>
+    </li>
+
+    <li>Within one thread, dependencies are tracked, so loads and reads to the same location can't be
+    reoredred relative to each other.</li>
+</ul>
+
+<span class="ref">AMD x64, Vol. 2, section 7.2.; ARMv8-A, section B2.3.12; ARMv8-A, section K13; <a href="https://www.cl.cam.ac.uk/~pes20/ppc-supplemental/test7.pdf">A Tutorial Introduction to the ARM and POWER Relaxed Memory Models</a>.</span>
+
+<h3>Barriers</h3>
+
+On x64, these barriers are available (but they are rarely needed, and I haven't found anybody posting an
+example where anything except <span class="code">MFENCE</span> is needed):
+<ul>
+    <li><span class="code">LFENCE</span> &mdash; Loads can't be reordered across the barrier.</li>
+    <li><span class="code">SFENCE</span> &mdash; Stores can't be reordered across the barrier.</li>
+    <li><span class="code">MFENCE</span> &mdash; Neither stores nor loads can be reordered across the barrier.</li>
+    <li>Instructions with the <span class="code">LOCK</span> prefix act as a <span class="code">MFENCE</span>.</li>
+</ul>
+
+On ARM, these barriers are available. Typically only <span class="code">DMB</span> is needed in user-space code.
+<ul>
+    <li><span class="code">DMB</span> &mdash; Neither stores nor loads can be reorered across the barrier.</li>
+    <li><span class="code">DSB</span> &mdash; All stores and loads must complete before the barrier. Used so stores complete before <span class="code">WFI</span> or <span class="code">WFE</span>.</li>
+    <li><span class="code">ISB</span> &mdash; Flushes the pipeline. Needed when jumping to code dynamically placed in memory.</li>
+    <li>ARMv8-A introduces additional barriers related to speculation, tracing and profiling.</li>
+</ul>
+
+<span class="ref">AMD x64, Vol. 1, section 3.9.2.; ARM: Barrier Litmus Tests and Cookbook; <a href="https://preshing.com/20120710/memory-barriers-are-like-source-control-operations/">Memory barriers are like source control operations</a>;  <a href="https://bartoszmilewski.com/2008/11/05/who-ordered-memory-fences-on-an-x86/">Who ordered memory fences on x86?</a>.</span>
+
+<h3>Single copy atomicity</h3>
+<ul>
+    <li>Single aligned stores are atomic on both x64 and ARM architectures.</li>
+    <li>On x64 with AVX, aligned 16-byte stores are atomic.</li>
+    <li>On x64, single stores within an 8-byte aligned region are atomic.</li>
+</ul>
+<span class="ref">AMD x64, Vol. 2, section 7.3.2.; ARMv8-A, section B2.2.</span>
+
+<h3>Special CPU instructions</h3>
+
+<p>On x64, the <span class="code">LOCK</span> prefix allows some load-modify-store instructions to be performed atomically.
+This includes
+<span class="code">ADD</span>, <span class="code">SUB</span>,
+<span class="code">INC</span>, <span class="code">DEC</span>,
+<span class="code">AND</span>, <span class="code">OR</span>,
+<span class="code">CMPCXHG</span>, and <span class="code">CMPXCHG16B</span>.
+The <span class="code">XCHG</span> instruction implicitly has a lock-prefix if it accesses memory.</p>
+
+<p>On ARM, starting with v7-M and v7-A, there are store/load-exclusive instructions, which can be used to
+write load-compare-store-loops. First you load, then you modify in register, then you store, and the store
+fails if somebody else stored between your load and store.
+Note that store/load-exclusive instructions on their own don't introduce memory barriers.</p>
+
+<p>On ARMv7, the instructions are <span class="code">LDREX</span> and <span class="code">STREX</span>.
+There also is <span class="code">LDREXD</span>/<span class="code">STREXD</span> for 64-bit register atomic updates.
+On ARMv8, they are <span class="code">LDXR</span> and <span class="code">STXR</span>.
+There also is <span class="code">LDXP</span>/<span class="code">STXP</span> for 128-bit atomic updates.</p>
+
+<p>Starting with ARMv-8, there are load-acquire instructions with <span class="code">A</span>-suffix
+and store-release instructions <span class="code">L</span>-suffix. There are both regular variants
+(e.g. <span class="code">LDAR</span>) and execlusive variants (e.g. <span class="code">STLXR</span>).
+These act as one-way barriers. Memory accesses after an acquire-barrier can't complete before the
+barrier. Memory accesses before a release-barrier must complete before the barrier.</p>
+
+<p>Additionally, there is the processor-consistent acquire <span class="code">AP</span>-suffix (e.g.
+<span class="code">LDAPR</span>). I haven't understood what this is for yet.</p>
+
+<span class="ref">AMD x64, Vol. 3, section 1.2.5; ARMv7-M, section A3.4; ARMv8-A, section B2.3.12; <a href="https://developer.arm.com/documentation/102336/0100/Load-Acquire-and-Store-Release-instructions">Load-Acquire and Store-Release instructions</a>; <a href="https://devblogs.microsoft.com/oldnewthing/20220812-00/?p=106968">Old New Thing on ARM barriers</a>.</span>
+
+<h3>Brief ARM architecture overview</h3>
+
+<p>In general, the memory model rules apply to all ARM architecture versions. However, the newer architectures
+have more instructions to support multithreaded programming. <i>My understanding is that on older architectures,
+pipelines were smaller and thus full barriers were less expensive relative to other instructions, so there was
+less of a need for more advanced synchronization mechanisms.</i></p>
+
+<table>
+    <tr><td rowspan="3">32-bit,<br>microcontrollers</td><td>ARMv6-M</td><td>Cortex-M0 / M0+ / M1</td></tr>
+    <tr><td>ARMv7-M</td><td>Cortex-M3 / M4 / M7</td></tr>
+    <tr><td>ARMv8-M</td><td>Cortex-M33 / M35P / M55 / M85</td></tr>
+    <tr><td rowspan=1>32-bit,<br>application</td><td>ARMv7-A</td><td>Cortex-A5 / A7 / A8 / A9 / A12 / A15 / A17</td></tr>
+    <tr><td rowspan=3>64-bit,<br>application</td><td>ARMv8-A</td><td>Cortex-A32<sup>*</sup> / A34 / A35 / A53 / A57 / A72 / A73</td></tr>
+    <tr><td>ARMv8.2-A</td><td>Cortex-A55 / A65 / A75 / A76 / A77 / A78</td></tr>
+    <tr><td>ARMv9-A</td><td>Cortex-A510 / A710 / A715</td></tr>
+</table>
+
+<p><i>*All ARMv8-A cortex cores support 64-bit, except the Cortex-A32 which is 32-bit only.</i></p>
+
+<p>The Raspberry Pi 2 is a Cortex-A7 (ARMv7-A), the Raspberry Pi 3 is a Cortex-A53 (ARMv8-A), and the Raspberry Pi 4 is a Cortex-A72 (ARMv8-A).</p>
+
+<span class="ref"><a href="https://en.wikipedia.org/wiki/ARM_Cortex-M#Instruction_sets">Wikipedia: Cortex-M</a> and <a href="https://en.wikipedia.org/wiki/ARM_Cortex-A#Instruction_sets">Cortex-A</a></span>
+
+</div></div>
+<div id="right_column"><div>
+
+<h2>What does the compiler do?</h2>
+
+<h3>Volatile</h3>
+
+<p>In C and C++, the <span class="code">volatile</span> keyword on a variable prevents the compiler from removing stores or loads
+to that variable. Commonly used to prevent the compiler from optimizing <span class="code">while (x)</span> to <span class="code">while (1)</span>.</p>
+
+<p>This only helps prevent compiler optimizations. It does not cause any barriers or special instructions to be generated. All the
+caveats of processor behaviour still apply.</p>
+
+<h3>&lt;stdatomic.h&gt; in C11 and &lt;atomic&gt; in C++11</h3>
+
+<p>Using these libraries prevent both compiler optimizations, insert necessary barrier instructions and generate
+special instructions as appropriate. You don't need to declare variables as <span class="code">volatile</span> when
+using either atomic functions or types.</p>
+
+<p>Generally, one doesn't have to worry about specific CPU details to write correct code when using these libraries,
+though knowing about CPU details can help write more performant code.</p>
+
+<p>In C, there are <a href="file:///C:/dev/docs/cppreference/reference/en/c/language/atomic.html">atomic types</a>, e.g. <span class="code">atomic_int</span>.
+For these types, load-modify-store operators (e.g. ++ or +=) are atomic. But using these operators give less control than using the functions.</p>
+
+<p>In C, there are functions such as <span class="code">atomic_fetch_add</span> which take a pointers to volatile objects.
+Since <span class="code">T *</span> implicitly casts to <span class="code">volatile T *</span>, you still don't actually
+need to declare variables as volatile to use these functions.</p>
+
+<p>In C++, the atomic types are defined as having overloaded operators to provide the same operations as for the types in C.
+The atomic functions take <span class="code">std::atomic&lt;T&gt; *</span> as a parameter, so you either need to declare your
+variables as such, or cast when calling atomic functions. <i>This prevents accidentally performing a non-atomic operation on
+an atomic variable.</i></p>
+
+<p>Both in C and C++, the atomic functions allow specifying a memory order, e.g. <span class="code">memory_order_acquire</span>.
+Acquire-semantics prevent memory accesses which come later from being moved in front of the acquire-access.
+Release-semantics require that memory accesses which came earlier complete before the the release-access.
+See <a href="https://preshing.com/20120913/acquire-and-release-semantics/">this blog post</a> for more details.</p>
+
+<p>See <a href="https://en.cppreference.com/w/cpp/thread#Atomic_operations">cppreference (C++)</a> and <a href="https://en.cppreference.com/w/c/thread#Atomic_operations">cppreference (C)</a>.</p>
+
+<h3>Windows</h3>
+
+<p>Windows provides <span class="code">Interlocked</span> functions. For example <a href="https://learn.microsoft.com/en-us/windows/win32/api/winnt/nf-winnt-interlockedcompareexchange"><span class="code">InterlockedCompareExchange</span></a>.
+Additionally, there are intrinsic, which are prefixed with an underscore, e.g. <a href="https://learn.microsoft.com/en-us/cpp/intrinsics/interlockedincrement-intrinsic-functions?view=msvc-170"><spann class="code">_InterlockedIncrement</spann></a>.
+In practice, both seem to produce identical code.</p>
+
+<h3>Linux kernel</h3>
+
+<p>The Linux kernel defines it's own set of primitives and helpers. Here are some links.
+Use <a href="https://elixir.bootlin.com/linux/latest/source">bootlin</a> to find usage examples.</p>
+<ul>
+    <li><a href="https://docs.kernel.org/core-api/wrappers/atomic_t.html">docs.kernel.org: Atomic types</a>, provides functions <i>simmilar</i>, but not equal to &lt;stdatomic.h&gt;.</li>
+    <li><a href="https://lwn.net/Articles/695257/">lwn.net: Atomic primitives in the kernel</a>, which also provides some history.</li>
+    <li><a href="https://docs.kernel.org/RCU/rcu.html">docs.kernel.org: RCU Concepts</a>, which provides protection for mostly-read variables. Also see <a href="https://lwn.net/Articles/262464/">lwn.net: What is RCU, Fundamentally?</a></li>
+    <li><a href="https://www.kernel.org/doc/Documentation/memory-barriers.txt">kernel.org: Memory barriers</a> and <a href="https://lwn.net/Articles/847481/">lwn.net: Lockless patterns: full memory barriers</a>.</li>
+</ul>
+
+
+</div>
+</body>
+</html>
