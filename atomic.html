@@ -20,6 +20,12 @@
         margin-bottom: 3px;
         color: #202020;
     }
+    h4 {
+        font-size: 16px;
+        margin-top: 20px;
+        margin-bottom: 3px;
+        color: #202020;
+    }
 
     p {
         margin-top: 8px;
@@ -86,6 +92,7 @@
         margin-left: 40px;
     }
     .code-table td {
+        vertical-align: top;
         text-align: left;
         border: none;
     }
@@ -119,7 +126,7 @@ Some examples:
         <p>Loads can be reordred to run before preceding stores.
         Both on x64 and ARM it is possible to get x=0 and y=0.</p>
 
-        <table class="code-table""><tr>
+        <table class="code-table"><tr>
             <td>
                 Thread 1
 <pre>
@@ -144,7 +151,7 @@ int y = *a;
         <p>On ARM, it is possible to get x=1, y=0 or x=0, y=1. A <span class="code">DMB</span> barrier is
         needed between the instruction pairs in <i>both</i> threads.</p>
 
-        <table class="code-table""><tr>
+        <table class="code-table"><tr>
             <td>
                 Thread 1
 <pre>
@@ -266,6 +273,8 @@ caveats of processor behaviour still apply.</p>
 
 <h3>&lt;stdatomic.h&gt; in C11 and &lt;atomic&gt; in C++11</h3>
 
+<p>See <a href="https://en.cppreference.com/w/cpp/thread#Atomic_operations">cppreference (C++)</a> and <a href="https://en.cppreference.com/w/c/thread#Atomic_operations">cppreference (C)</a>.</p>
+
 <p>Using these libraries prevent both compiler optimizations, insert necessary barrier instructions and generate
 special instructions as appropriate. You don't need to declare variables as <span class="code">volatile</span> when
 using either atomic functions or types.</p>
@@ -274,23 +283,53 @@ using either atomic functions or types.</p>
 though knowing about CPU details can help write more performant code.</p>
 
 <p>In C, there are <a href="file:///C:/dev/docs/cppreference/reference/en/c/language/atomic.html">atomic types</a>, e.g. <span class="code">atomic_int</span>.
-For these types, load-modify-store operators (e.g. ++ or +=) are atomic. But using these operators give less control than using the functions.</p>
-
-<p>In C, there are functions such as <span class="code">atomic_fetch_add</span> which take a pointers to volatile objects.
-Since <span class="code">T *</span> implicitly casts to <span class="code">volatile T *</span>, you still don't actually
-need to declare variables as volatile to use these functions.</p>
+For these types, load-modify-store operators (e.g. ++ or +=) are atomic. But you are not able to explicitly specify memory ordering.</p>
 
 <p>In C++, the atomic types are defined as having overloaded operators to provide the same operations as for the types in C.
 The atomic functions take <span class="code">std::atomic&lt;T&gt; *</span> as a parameter, so you either need to declare your
-variables as such, or cast when calling atomic functions. <i>This prevents accidentally performing a non-atomic operation on
-an atomic variable.</i></p>
+variables as such, or cast when calling atomic functions. <i>This prevents accidentally performing atomic operations on
+"non-atomic" variables (non-atomic in quotes, because atomicity really is a property of the operation, not the variable).</i></p>
 
 <p>Both in C and C++, the atomic functions allow specifying a memory order, e.g. <span class="code">memory_order_acquire</span>.
-Acquire-semantics prevent memory accesses which come later from being moved in front of the acquire-access.
-Release-semantics require that memory accesses which came earlier complete before the the release-access.
 See <a href="https://preshing.com/20120913/acquire-and-release-semantics/">this blog post</a> for more details.</p>
 
-<p>See <a href="https://en.cppreference.com/w/cpp/thread#Atomic_operations">cppreference (C++)</a> and <a href="https://en.cppreference.com/w/c/thread#Atomic_operations">cppreference (C)</a>.</p>
+<table class="code-table"><tr><td>
+        <h4>Release + Acquire</h4>
+<pre>
+// Thread A:
+memcpy(shared_data, ...);
+atomic_store_explicit(pointer, value, memory_order_release);
+
+// Thread B:
+int value = atomic_load_explicit(pointer, memory_order_acquire);
+memcpy(local_buffer, shared_data);
+</pre>
+        <p><i>All</i> memory writes from thread A are visible to thread B, since they've synchronized on the same pointer.</p>
+        <p>Godbolt: <a href="https://godbolt.org/z/sG7f16cT8">https://godbolt.org/z/sG7f16cT8</a></p>
+
+        <h4>Release + Consume</h4>
+        <p>Behaves like release+acquire, but in thread B, only loads which are dependent on the atomically loaded value
+        are guaranteed to see stores from thread A. Compiler and processor are free to reorder other loads/stores.</p>
+        <p>The idea is that this allows the compiler to skip a barrier since it knows that most processors track dependencies
+        when performing memory operations.</p>
+        <p>In practice, apparently all compilers treat <span class="code">_consume</span> like <span class="code">_acquire</span>.
+        See e.g. <a href="https://stackoverflow.com/a/65353549">https://stackoverflow.com/a/65353549</a></p>
+    </td><td>
+        <h4>Relaxed</h4>
+<pre>
+int value = atomic_load_explicit(pointer, memory_order_relaxed);
+</pre>
+        <p>The compiler can reorder this arbitrarily, and doesn't generate any barriers</p>
+        <p>Since x64 and ARM have single copy atomicity, this just works as a hint to the compiler to generate a single load instruction.</p>
+
+        <h4>Acquire-release</h4>
+        <p><span class="code">memory_order_acq_rel</span> can be used with any read-modify-write operation to give both acquire and release semantics.</p>
+
+        <h4>Sequentially consistent</h4>
+        <p><span class="code">memory_order_seq_cst</span> prevents any reordering of stores/loads across the operation.</p>
+        <p>This is the default ordering for the non-<span class="code">_explicit</span> versions of the functions.</p>
+        <p><i>I think this is an oversimplification, the specification is much more complicated than this.</i></p>
+</td></tr></table>
 
 <h3>Windows</h3>
 
